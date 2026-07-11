@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 專案概觀
 
-「可不可愛、日文厲害」——像素 RPG 日文學習遊戲（完全新手到 N1）。**整個遊戲就是一個檔案 `index.html`**（HTML+CSS+JS，約 1700 行），零依賴、無 build。目前內容狀態與玩法清單見 `PROJECT_STATUS.md`（內容大改時要同步更新它與 root `README.md` 總覽表）。
+「可不可愛、日文厲害」——像素 RPG 語言學習遊戲，雙大陸：日本（五十音到 N1）＋韓國（諺文到 TOPIK II）。**整個遊戲就是一個檔案 `index.html`**（HTML+CSS+JS），零依賴、無 build。目前內容狀態與玩法清單見 `PROJECT_STATUS.md`（內容大改時要同步更新它與 root `README.md` 總覽表）。
 
 執行：直接用瀏覽器開 `index.html`（建議直式視窗）。
 
@@ -12,6 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Artifact 嚴格 CSP**：禁止外部圖片、字型、CDN、fetch。所有素材以 Canvas（像素 sprite）、CSS、WebAudio（音效）程式合成；日文發音用瀏覽器內建 `speechSynthesis`（ja-JP），無日文語音時聽力題自動退化為閱讀題（`ttsOK()` 判斷）。
 - 保持單檔：不要拆檔、不要引入框架。
+- 韓文字母（諺文）沒有筆順資料（KanjiVG 只有日文假名），寫字板會自動退回字型描邊——這是預期行為。
 
 ## 驗證（改完必跑）
 
@@ -30,13 +31,17 @@ node --check game.js
 
 ### 資料層（最常改的地方）
 
-`REGIONS` 陣列是唯一內容來源，一個 region 含多個 chapter，chapter 有四種 `kind`：
+內容來源是兩個 region 陣列：`REGIONS`（日本）與 `REGIONS_KR`（韓國），由 `WORLDS={jp,kr}` 統整（各帶 `tts` 語言與 `letter` 稱呼）。一個 region 含多個 chapter，chapter 有四種 `kind`：
 
-- `kana`：用 `kanaCh(id,name,怪物名,sprite,[[假名,羅馬音,聯想,例字],...])` 建立
-- `vocab` / `phrase`：用 `vocabCh()`/`phraseCh()` 建立，item 用 `vh(假名,漢字,中文,聯想)`（假名為主，N5/N4）或 `vk(漢字,假名,中文,聯想)`（漢字為主，N3+），**一行一字**方便持續擴充
+- `kana`：用 `kanaCh(id,name,怪物名,sprite,[[字,羅馬音,聯想,例字],...])` 建立（日文假名與韓文字母都用它）
+- `vocab` / `phrase`：用 `vocabCh()`/`phraseCh()` 建立，item 用 `vh(假名,漢字,中文,聯想)`（日，假名為主）、`vk(漢字,假名,中文,聯想)`（日，漢字為主，N3+）或 `kv(韓文,羅馬音,中文,聯想)`（韓），**一行一字**方便持續擴充
 - `talk`：Visual Novel 對話，直接寫物件 `{kind:'talk', npc:{name,sprite}, steps:[{jp,zh,ch:[選項]}]}`，每 step 的 `ch` 恰好一個 `ok:1`，錯誤選項要有 `why`（解釋為什麼失禮）
 
-**魔王戰不要手寫**：載入時程式自動為每個 region 追加 `{id:'rX_boss', boss:true}` 章節，題池＝該區全部非 talk items（抽 12 題、時限 8 秒）。加內容後魔王戰自動更新。資料層之後會建索引 `CHMAP`/`REGION_OF`/`KANA_ALL`。
+章節與區域 id 需**跨兩大陸全域唯一**（韓國用 `kr*`/`kc*`/`kd*` 前綴）。
+
+**魔王戰不要手寫**：載入時程式自動為每個 region 追加 `{id:'rX_boss', boss:true}` 章節，題池＝該區全部非 talk items（抽 12 題、時限 8 秒）。加內容後魔王戰自動更新。資料層之後會建索引 `CHMAP`/`REGION_OF`/`RMAP`/`KANA_POOL`（依大陸分池，聽力干擾項不跨語言）。
+
+**每日一句**：`DAILY={jp:[…],kr:[…]}` 各 31 句高頻口語（`{t,ro,zh,note}`），依 day-of-year 輪替，`startGame(world)` 進大陸時彈出。
 
 ### 解鎖與存檔
 

@@ -185,6 +185,14 @@ canvas.spr{image-rendering:pixelated;display:block;}
   border-radius:2px;pointer-events:none;max-width:90vw;text-align:center;line-height:1.5;}
 #toast.show{transform:translateX(-50%) translateY(0);}
 
+#daily{position:fixed;inset:0;z-index:110;display:none;place-items:center;
+  background:rgba(10,10,22,.78);padding:20px;}
+#daily.show{display:grid;animation:popin .18s ease-out;}
+.dailybox{max-width:420px;width:100%;display:flex;flex-direction:column;gap:10px;
+  padding:18px 16px;text-align:center;align-items:center;background:var(--night);}
+.dailybox .dsent{font-size:26px;font-weight:900;line-height:1.5;}
+.dailybox .meaning{font-size:16px;}
+
 .screenhead{display:flex;justify-content:space-between;align-items:center;gap:10px;}
 .screenhead h2{margin:0;font-size:17px;letter-spacing:1px;}
 .backbtn{font-size:13px;padding:6px 10px;}
@@ -205,27 +213,32 @@ canvas.spr{image-rendering:pixelated;display:block;}
 
   <!-- 標題畫面 -->
   <div class="screen" id="scr-title">
-    <div class="tag" style="align-self:center;">PIXEL RPG × 日本語　新手村 → N1 魔王城</div>
+    <div class="tag" style="align-self:center;">PIXEL RPG × 日語・韓語　選一塊大陸開始攻略</div>
     <h1 class="logo" style="margin:0;">
       <span class="l1">可不可愛</span>
       <span class="l2">日文厲害</span>
-      <span class="sub">KAWAII QUEST ─ 從五十音打到 N1 的日文冒險</span>
+      <span class="sub">KAWAII QUEST ─ 從五十音・諺文打到魔王城</span>
     </h1>
     <div class="vs">
       <span class="bob"><canvas class="spr" id="cv-hero"></canvas></span>
       <span style="color:var(--dim);font-weight:900;">VS</span>
       <span class="bob2"><canvas class="spr" id="cv-boss-t"></canvas></span>
     </div>
-    <button class="btn gold pressstart" style="align-self:center;font-size:19px;padding:14px 34px;" onclick="startGame()">▶ 開始冒險</button>
+    <button class="btn gold pressstart" style="align-self:center;font-size:18px;padding:13px 30px;" onclick="startGame('jp')">🌸 攻破日本大陸</button>
+    <button class="btn gold pressstart" style="align-self:center;font-size:18px;padding:13px 30px;" onclick="startGame('kr')">💜 攻破韓國大陸</button>
     <p class="small" style="text-align:center;margin:0;">
       免安裝・進度自動存在這台裝置的瀏覽器<br>
-      建議開啟聲音，體驗 8-bit 音效與日文發音
+      建議開啟聲音，體驗 8-bit 音效與日／韓發音
     </p>
     <button class="btn ghostbtn" style="align-self:center;font-size:12px;padding:5px 10px;" onclick="resetSave()">重置進度</button>
   </div>
 
   <!-- 世界地圖（區域選擇） -->
   <div class="screen" id="scr-map">
+    <div class="screenhead">
+      <h2 id="map-title"></h2>
+      <button class="btn ghostbtn backbtn" onclick="SFX.tap();go('title')">⇄ 換大陸</button>
+    </div>
     <div class="panel hud" id="hud"></div>
     <div class="chlist" id="regionlist"></div>
     <p class="small" style="text-align:center;margin:0;">每個區域通關一半以上，就會開啟下一個區域</p>
@@ -331,6 +344,21 @@ canvas.spr{image-rendering:pixelated;display:block;}
 
 </div>
 <div id="toast"></div>
+
+<!-- 每日一句（進入大陸時彈出） -->
+<div id="daily">
+  <div class="panel dailybox">
+    <div class="tag">📜 今日的經典一句</div>
+    <div class="dsent" id="daily-sent"></div>
+    <div class="romaji mono" id="daily-ro"></div>
+    <div class="meaning" id="daily-zh"></div>
+    <div class="small" id="daily-note" style="color:var(--dim);"></div>
+    <div class="writeacts" style="margin-top:6px;">
+      <button class="btn" onclick="sayDaily()">🔊 聽發音</button>
+      <button class="btn gold" onclick="closeDaily()">⚔ 收下，出發！</button>
+    </div>
+  </div>
+</div>
 
 <script>
 'use strict';
@@ -1046,21 +1074,327 @@ const BUFFS={
  heart:{icon:'💗',name:'多一顆心',desc:'下一場戰鬥 ♥ +1'},
 };
 
+/* ================= 韓國大陸 ================= */
+// 韓文單字：kr 原文、ro 羅馬拼音（卡面副標）、zh 中文、memo 聯想
+function kv(kr,ro,zh,memo){return {jp:kr,sub:ro,kana:kr,zh,memo};}
+const REGIONS_KR=[
+{id:'kr0',icon:'slime',name:'新手村（韓）',desc:'韓劇裡天天聽到的那幾句，先學先贏',chapters:[
+  phraseCh('kc1','勇者的第一句話','見習史萊姆','slime',[
+    {jp:'안녕하세요',ro:'an·nyeong·ha·se·yo',zh:'你好',memo:'早午晚通用的萬用問候，韓文界的瑞士刀。'},
+    {jp:'감사합니다',ro:'gam·sa·ham·ni·da',zh:'謝謝',memo:'正式感謝。店員一天要說一百次的話。'},
+    {jp:'대박',ro:'dae·bak',zh:'太讚了／不得了',memo:'韓劇綜藝出現率 No.1 的感嘆詞！'},
+    {jp:'귀여워요',ro:'gwi·yeo·wo·yo',zh:'好可愛',memo:'本遊戲核心精神的韓文版，務必熟練。'},
+    {jp:'괜찮아요',ro:'gwaen·chan·a·yo',zh:'沒關係／沒問題',memo:'被史萊姆撞到也要微笑說的話。'},
+    {jp:'잘 먹겠습니다',ro:'jal meok·ge·sseum·ni·da',zh:'開動了',memo:'吃飯前的神聖儀式，跟いただきます一樣重要。'},
+  ]),
+  phraseCh('kc1b','寒暄修行','寒暄史萊姆','slime',[
+    {jp:'안녕',ro:'an·nyeong',zh:'嗨／拜拜（朋友間）',memo:'見面道別都能用，超方便的一句。'},
+    {jp:'여보세요',ro:'yeo·bo·se·yo',zh:'喂（接電話）',memo:'只在電話裡用，當面說會很奇怪！'},
+    {jp:'죄송합니다',ro:'joe·song·ham·ni·da',zh:'對不起（正式）',memo:'對長輩、陌生人道歉用這句。'},
+    {jp:'미안해',ro:'mi·an·hae',zh:'對不起（朋友間）',memo:'半語版道歉，只能對熟人說。'},
+    {jp:'잘 자요',ro:'jal ja·yo',zh:'晚安（睡前）',memo:'字面意思是「好好睡」。'},
+    {jp:'처음 뵙겠습니다',ro:'cheo·eum boep·ge·sseum·ni·da',zh:'初次見面',memo:'自我介紹的開場白。'},
+    {jp:'또 봐요',ro:'tto bwa·yo',zh:'下次見',memo:'輕鬆的再見，期待再相會。'},
+  ]),
+]},
+{id:'kr1',icon:'cat',name:'諺文之森',desc:'四十個字母，拼出整個韓文世界',chapters:[
+  kanaCh('kc2','子音一 ㄱ〜ㅁ','諺文貓貓','cat',[
+    ['ㄱ','g/k','像一把手槍，砰！字母名：기역。','가방（包包）'],
+    ['ㄴ','n','像張直角小椅子，坐著唸 n。字母名：니은。','나무（樹）'],
+    ['ㄷ','d/t','半個口字形的門框。字母名：디귿。','다리（腿／橋）'],
+    ['ㄹ','r/l','彎彎曲曲的小蛇。字母名：리을。','라면（泡麵）'],
+    ['ㅁ','m','四四方方的嘴巴，閉口唸 m。字母名：미음。','물（水）'],
+  ]),
+  kanaCh('kc3','子音二 ㅂ〜ㅊ','諺文幽靈','ghost',[
+    ['ㅂ','b/p','一個裝水的水桶。字母名：비읍。','바나나（香蕉）'],
+    ['ㅅ','s','一座小山峰。字母名：시옷。','사랑（愛）'],
+    ['ㅇ','-/ng','圓圈圈：當開頭不發音，當收尾唸 ng。字母名：이응。','아기（嬰兒）'],
+    ['ㅈ','j','ㅅ戴上一頂帽子。字母名：지읒。','자다（睡覺）'],
+    ['ㅊ','ch','ㅈ再加一點，多噴一口氣。字母名：치읓。','치킨（炸雞）'],
+  ]),
+  kanaCh('kc4','激音 ㅋㅌㅍㅎ','氣音小鳥','bird',[
+    ['ㅋ','k','大力吐氣的 k。韓國人打字的「ㅋㅋㅋ」就是哈哈哈！','코（鼻子）'],
+    ['ㅌ','t','ㄷ多一橫，多一口氣。','토끼（兔子）'],
+    ['ㅍ','p','像兩根柱子的橋，用力唸 p。','포도（葡萄）'],
+    ['ㅎ','h','戴帽子的圓圈，哈～地吐氣。','하늘（天空）'],
+  ]),
+  kanaCh('kc5','硬音雙子音','緊繃史萊姆','slime',[
+    ['ㄲ','kk','兩把手槍！喉嚨繃緊的 kk。','꿈（夢）'],
+    ['ㄸ','tt','雙門框，繃緊唸 tt。','딸기（草莓）'],
+    ['ㅃ','pp','雙水桶，繃緊唸 pp。','오빠（哥哥／歐巴）'],
+    ['ㅆ','ss','兩座山峰，繃緊唸 ss。','싸다（便宜）'],
+    ['ㅉ','jj','雙帽子，繃緊唸 jj。','짜다（鹹）'],
+  ]),
+  kanaCh('kc6','母音一 ㅏㅑㅓㅕㅗ','母音狐狸','fox',[
+    ['ㅏ','a','人向右伸手：嘴巴張大唸 a。','아침（早上）'],
+    ['ㅑ','ya','伸兩隻手，加個 y 變 ya。','야구（棒球）'],
+    ['ㅓ','eo','人向左伸手：嘴巴放鬆唸 eo（類似「喔」）。','어머니（媽媽）'],
+    ['ㅕ','yeo','向左伸兩隻手，yeo。','여름（夏天）'],
+    ['ㅗ','o','地面上長出的小樹，嘴巴嘟圓唸 o。','오이（小黃瓜）'],
+  ]),
+  kanaCh('kc7','母音二 ㅛㅜㅠㅡㅣ','母音幽靈','ghost',[
+    ['ㅛ','yo','兩棵小樹，yo。','요리（料理）'],
+    ['ㅜ','u','往地下長的樹根，嘴巴嘟起唸 u。','우유（牛奶）'],
+    ['ㅠ','yu','兩條樹根，yu。','유자차（柚子茶）'],
+    ['ㅡ','eu','一條地平線，嘴巴扁扁地唸 eu。','그림（畫）'],
+    ['ㅣ','i','一根直挺挺的柱子，唸 i。','이름（名字）'],
+  ]),
+  kanaCh('kc8','複合母音精選','合體貓貓','cat',[
+    ['ㅐ','ae','ㅏ＋ㅣ合體，唸「ㄟ」。','개（狗）'],
+    ['ㅔ','e','ㅓ＋ㅣ合體，也唸「ㄟ」（現代發音幾乎相同）。','게（螃蟹）'],
+    ['ㅘ','wa','ㅗ＋ㅏ合體，wa。','과자（餅乾）'],
+    ['ㅚ','oe','ㅗ＋ㅣ合體，唸「weh」。','회사（公司）'],
+    ['ㅢ','ui','ㅡ＋ㅣ合體，快速滑過去 ui。','의사（醫生）'],
+  ]),
+]},
+{id:'kr2',icon:'bird',name:'旅人驛站（韓）',desc:'去首爾玩，這些句子直接就能用',chapters:[
+  phraseCh('kc9','移動篇','指路小鳥','bird',[
+    {jp:'여기로 가 주세요',ro:'yeo·gi·ro ga ju·se·yo',zh:'請到這裡（指地址）',memo:'上計程車把地址亮出來＋這句，無敵。'},
+    {jp:'지하철역이 어디예요?',ro:'ji·ha·cheol·yeok·i eo·di·ye·yo',zh:'地鐵站在哪裡？',memo:'首爾地鐵超發達，這句用到爛。'},
+    {jp:'얼마나 걸려요?',ro:'eol·ma·na geol·lyeo·yo',zh:'要花多久？',memo:'問時間的萬用句。'},
+    {jp:'여기서 세워 주세요',ro:'yeo·gi·seo se·wo ju·se·yo',zh:'請在這裡停車',memo:'計程車快到目的地時說。'},
+    {jp:'표 한 장 주세요',ro:'pyo han jang ju·se·yo',zh:'請給我一張票',memo:'買票萬用句，장是「張」。'},
+    {jp:'길을 잃었어요',ro:'gil·eul il·eo·sseo·yo',zh:'我迷路了',memo:'說出這句，好心人就會出現。'},
+  ]),
+  phraseCh('kc10','餐廳篇','餓肚子幽靈','ghost',[
+    {jp:'메뉴 주세요',ro:'me·nyu ju·se·yo',zh:'請給我菜單',memo:'주세요＝請給我，句尾萬用零件。'},
+    {jp:'이거 주세요',ro:'i·geo ju·se·yo',zh:'請給我這個',memo:'指著菜單說，點餐終極奧義。'},
+    {jp:'덜 맵게 해 주세요',ro:'deol maep·ge hae ju·se·yo',zh:'請做得不要太辣',memo:'怕辣的勇者保命咒語！'},
+    {jp:'물 좀 주세요',ro:'mul jom ju·se·yo',zh:'請給我水',memo:'被辣到的時候會喊得特別大聲。'},
+    {jp:'계산해 주세요',ro:'gye·san·hae ju·se·yo',zh:'請結帳',memo:'韓國通常是拿帳單到櫃檯結。'},
+    {jp:'포장해 주세요',ro:'po·jang·hae ju·se·yo',zh:'請幫我打包',memo:'吃不完帶走，環保又划算。'},
+    {jp:'진짜 맛있어요',ro:'jin·jja ma·si·sseo·yo',zh:'真的好好吃',memo:'對老闆說這句，好感度大提升。'},
+  ]),
+  phraseCh('kc11','購物篇','殺價狐狸','fox',[
+    {jp:'이거 얼마예요?',ro:'i·geo eol·ma·ye·yo',zh:'這個多少錢？',memo:'購物第一句，配合手指指指點點。'},
+    {jp:'좀 깎아 주세요',ro:'jom kka·kka ju·se·yo',zh:'算便宜一點啦',memo:'傳統市場限定技，百貨公司慎用！'},
+    {jp:'입어 봐도 돼요?',ro:'ib·eo bwa·do dwae·yo',zh:'可以試穿嗎？',memo:'買衣服必備。'},
+    {jp:'다른 색 있어요?',ro:'da·reun saek i·sseo·yo',zh:'有別的顏色嗎？',memo:'색＝顏色。'},
+    {jp:'카드 돼요?',ro:'ka·deu dwae·yo',zh:'可以刷卡嗎？',memo:'韓國幾乎都能刷卡，但問一下安心。'},
+    {jp:'봉투 주세요',ro:'bong·tu ju·se·yo',zh:'請給我袋子',memo:'便利商店結帳常用。'},
+  ]),
+  {id:'kd1',name:'路邊攤初體驗',kind:'talk',npc:{name:'攤販・辣媽',sprite:'oni'},steps:[
+    {jp:'어서 오세요! 뭐 드릴까요?',zh:'歡迎光臨！要來點什麼？',ch:[
+      {jp:'떡볶이 하나 주세요',zh:'請給我一份辣炒年糕',ok:1},
+      {jp:'안녕히 가세요',zh:'再見（請慢走）',why:'才剛走進來就跟人家道別，辣媽一頭霧水！'},
+      {jp:'저는 학생이에요',zh:'我是學生',why:'沒有人問你的職業啦！'},
+    ]},
+    {jp:'맵기는 어떻게 해 드려요?',zh:'辣度要怎麼調？',ch:[
+      {jp:'덜 맵게 해 주세요',zh:'請不要太辣',ok:1},
+      {jp:'얼마예요?',zh:'多少錢？',why:'先回答辣度啦，錢等一下再說！'},
+      {jp:'화장실이 어디예요?',zh:'廁所在哪裡？',why:'話題跳太快，辣媽跟不上！'},
+    ]},
+    {jp:'음료수도 필요하세요?',zh:'需要飲料嗎？',ch:[
+      {jp:'네, 사이다 주세요',zh:'好，請給我汽水',ok:1},
+      {jp:'아니요, 저는 고양이예요',zh:'不，我是一隻貓',why:'？？？辣媽的勺子嚇掉了。'},
+      {jp:'지하철역이 어디예요?',zh:'地鐵站在哪裡？',why:'吃完再問路也不遲吧！'},
+    ]},
+    {jp:'자, 여기 있어요! 뜨거우니까 조심하세요',zh:'來，請用！很燙要小心喔',ch:[
+      {jp:'감사합니다! 잘 먹겠습니다',zh:'謝謝！開動了',ok:1},
+      {jp:'싫어요',zh:'不要',why:'人家好心提醒你燙，回「不要」也太沒禮貌！'},
+      {jp:'처음 뵙겠습니다',zh:'初次見面',why:'都聊半天了才說初次見面，時空錯亂！'},
+    ]},
+    {jp:'맛이 어때요?',zh:'味道怎麼樣？',ch:[
+      {jp:'진짜 맛있어요! 대박!',zh:'真的超好吃！讚！',ok:1},
+      {jp:'짜증나요',zh:'好煩喔',why:'對用心做菜的辣媽說這個，太傷人了！'},
+      {jp:'몰라요',zh:'不知道',why:'至少給點反應嘛，辣媽會傷心的！'},
+    ]},
+  ]},
+]},
+{id:'kr3',icon:'fox',name:'漢江祭典',desc:'韓食、追星、心動單字，最好玩的都在這',chapters:[
+  vocabCh('kc12','韓食祭','吃貨狐狸','fox',[
+    kv('김치','gim·chi','泡菜','韓國餐桌的靈魂，沒有它就不算開飯。'),
+    kv('떡볶이','tteok·bo·kki','辣炒年糕','路邊攤女王，紅通通的國民小吃。'),
+    kv('삼겹살','sam·gyeop·sal','五花肉','聚餐燒肉首選，配生菜包著吃。'),
+    kv('치맥','chi·maek','炸雞配啤酒','치킨＋맥주的合體字，週五夜的浪漫。'),
+    kv('비빔밥','bi·bim·bap','拌飯','비비다＝攪拌，拌得越用力越好吃。'),
+    kv('김밥','gim·bap','海苔飯捲','韓版壽司捲，野餐郊遊必備。'),
+    kv('만두','man·du','餃子','跟中文「饅頭」同源，但其實是餃子！'),
+    kv('냉면','naeng·myeon','冷麵','夏天吃冰冰的蕎麥麵，燒肉的最佳收尾。'),
+  ]),
+  vocabCh('kc13','追星祭','應援小鳥','bird',[
+    kv('오빠','o·ppa','哥哥／歐巴','女生叫年長男性，追星界最高頻詞彙。'),
+    kv('언니','eon·ni','姊姊','女生叫年長女性。'),
+    kv('최애','choe·ae','本命（最愛）','최＝最、애＝愛，你的最推就是최애。'),
+    kv('팬','paen','粉絲','外來語 fan。'),
+    kv('콘서트','kon·seo·teu','演唱會','外來語 concert，錢包的墳墓。'),
+    kv('응원','eung·won','應援','為偶像加油打氣的一切行動。'),
+    kv('데뷔','de·bwi','出道','外來語 début。'),
+    kv('막내','mang·nae','老么／忙內','團體裡最小的成員，發音是 mang-nae！'),
+  ]),
+  vocabCh('kc14','心動祭','戀愛貓貓','cat',[
+    kv('사랑해요','sa·rang·hae·yo','我愛你','韓劇告白名場面標配。'),
+    kv('보고 싶어요','bo·go si·peo·yo','想你','字面是「想見你」，思念滿點。'),
+    kv('남자친구','nam·ja·chin·gu','男朋友','縮寫남친。'),
+    kv('여자친구','yeo·ja·chin·gu','女朋友','縮寫여친。'),
+    kv('썸','sseom','曖昧','從 something 來的新造語，還不是戀人的微妙關係。'),
+    kv('고백','go·baek','告白','鼓起勇氣的瞬間。'),
+    kv('첫사랑','cheot·sa·rang','初戀','첫＝第一次。'),
+    kv('데이트','de·i·teu','約會','外來語 date。'),
+  ]),
+]},
+{id:'kr4',icon:'oni',name:'TOPIK I 草原',desc:'初級核心字彙，冒險的基本裝備',chapters:[
+  vocabCh('kc15','數字與時間','數數鬼','oni',[
+    kv('하나','ha·na','一（固有數字）','數東西用：하나、둘、셋！'),
+    kv('둘','dul','二（固有數字）','數東西的二。'),
+    kv('셋','set','三（固有數字）','拍照喊「하나 둘 셋」＝一二三！'),
+    kv('오늘','o·neul','今天','오늘도 화이팅＝今天也加油。'),
+    kv('내일','nae·il','明天','明天的事明天再說。'),
+    kv('어제','eo·je','昨天','昨天已經過去了。'),
+    kv('지금','ji·geum','現在','活在當下！'),
+    kv('시간','si·gan','時間','漢字語「時間」，發音也很像。'),
+  ]),
+  vocabCh('kc16','生活名詞','生活史萊姆','slime',[
+    kv('집','jip','家','回家＝집에 가다。'),
+    kv('학교','hak·gyo','學校','漢字語「學校」。'),
+    kv('회사','hoe·sa','公司','漢字語「會社」，上班族的第二個家。'),
+    kv('친구','chin·gu','朋友','漢字語「親舊」，老朋友的意思。'),
+    kv('가족','ga·jok','家人','漢字語「家族」。'),
+    kv('돈','don','錢','冒險和追星都需要的東西。'),
+    kv('밥','bap','飯','밥 먹었어요?＝吃飯了嗎？韓式問候。'),
+    kv('커피','keo·pi','咖啡','外來語 coffee，韓國人的血液。'),
+  ]),
+  vocabCh('kc17','動詞入門','行動之鬼','oni',[
+    kv('가다','ga·da','去','다結尾是動詞原形的標誌。'),
+    kv('오다','o·da','來','가다的相反。'),
+    kv('먹다','meok·da','吃','人生大事。'),
+    kv('마시다','ma·si·da','喝','咖啡、水、燒酒都用它。'),
+    kv('보다','bo·da','看','看韓劇＝드라마를 보다。'),
+    kv('사다','sa·da','買','錢包警報。'),
+    kv('자다','ja·da','睡覺','잘 자요＝好好睡（晚安）。'),
+    kv('좋아하다','jo·a·ha·da','喜歡','告白入門動詞。'),
+  ]),
+  vocabCh('kc18','形容詞入門','心情幽靈','ghost',[
+    kv('좋다','jo·ta','好','좋아요＝讚！社群按讚就是這個字。'),
+    kv('나쁘다','na·ppeu·da','壞','壞人＝나쁜 사람。'),
+    kv('크다','keu·da','大','大＝크다，小＝작다，一起記。'),
+    kv('작다','jak·da','小','크다的相反。'),
+    kv('예쁘다','ye·ppeu·da','漂亮','稱讚必備，跟귀엽다（可愛）並肩作戰。'),
+    kv('맛있다','ma·sit·da','好吃','맛＝味道、있다＝有：有味道＝好吃！'),
+    kv('재미있다','jae·mi·it·da','有趣','有재미（趣味）＝有趣。'),
+    kv('바쁘다','ba·ppeu·da','忙','現代人的日常。'),
+  ]),
+]},
+{id:'kr5',icon:'dragon',name:'TOPIK II 魔王城',desc:'中高級語彙，韓語龍神在此鎮守',chapters:[
+  vocabCh('kc19','魔王語彙・壹','門番龍','dragon',[
+    kv('경험','gyeong·heom','經驗','漢字語「經驗」。'),
+    kv('관계','gwan·gye','關係','漢字語「關係」。'),
+    kv('문화','mun·hwa','文化','漢字語「文化」。'),
+    kv('사회','sa·hoe','社會','漢字語「社會」。'),
+    kv('경제','gyeong·je','經濟','漢字語「經濟」，新聞常客。'),
+    kv('환경','hwan·gyeong','環境','漢字語「環境」。'),
+    kv('습관','seup·gwan','習慣','漢字語「習慣」。'),
+    kv('약속','yak·sok','約定','漢字語「約束」，跟日文やくそく是親戚！'),
+  ]),
+  vocabCh('kc20','魔王語彙・貳','韓語龍神','dragon',[
+    kv('노력하다','no·ryeok·ha·da','努力','漢字語「努力」＋하다變動詞。'),
+    kv('포기하다','po·gi·ha·da','放棄','포기하지 마세요＝請不要放棄！'),
+    kv('성공하다','seong·gong·ha·da','成功','漢字語「成功」。'),
+    kv('실패하다','sil·pae·ha·da','失敗','失敗為成功之母。'),
+    kv('준비하다','jun·bi·ha·da','準備','漢字語「準備」。'),
+    kv('결정하다','gyeol·jeong·ha·da','決定','漢字語「決定」。'),
+    kv('도전하다','do·jeon·ha·da','挑戰','漢字語「挑戰」，向魔王城도전！'),
+    kv('응원하다','eung·won·ha·da','應援／加油','幫人加油打氣，追星動詞的原點。'),
+  ]),
+]},
+];
+
+/* ================= 世界（大陸）設定 ================= */
+const WORLDS={
+ jp:{id:'jp',name:'日本大陸',icon:'🌸',tts:'ja',letter:'假名',regions:REGIONS},
+ kr:{id:'kr',name:'韓國大陸',icon:'💜',tts:'ko',letter:'字母',regions:REGIONS_KR},
+};
+
 // 主題魔王：每個區域最後追加一場「總復習」魔王戰。
 // 出題池＝該區全部內容，必須先通關區內所有章節才解鎖；打贏＝這個主題完整學完。
-REGIONS.forEach(r=>{
+Object.values(WORLDS).forEach(w=>w.regions.forEach(r=>{
+  r.world=w.id;
   const norm=r.chapters.filter(c=>c.kind!=='talk');
   if(!norm.length)return;
   const pool=[];
   norm.forEach(c=>pool.push.apply(pool,c.items));
   r.chapters.push({id:r.id+'_boss',name:'主題魔王戰',kind:norm[0].kind,boss:true,
     monster:{name:'魔王・'+r.name,sprite:'dragon'},items:pool});
-});
-// 索引
-const CHMAP={},REGION_OF={};
-REGIONS.forEach(r=>r.chapters.forEach(c=>{CHMAP[c.id]=c;REGION_OF[c.id]=r.id;}));
-const KANA_ALL=[];
-REGIONS.forEach(r=>r.chapters.forEach(c=>{if(c.kind==='kana'&&!c.boss)c.items.forEach(it=>KANA_ALL.push(it));}));
+}));
+// 索引（跨兩塊大陸；章節與區域 id 全域唯一）
+const CHMAP={},REGION_OF={},RMAP={},KANA_POOL={jp:[],kr:[]};
+Object.values(WORLDS).forEach(w=>w.regions.forEach(r=>{
+  RMAP[r.id]=r;
+  r.chapters.forEach(c=>{
+    CHMAP[c.id]=c;REGION_OF[c.id]=r.id;
+    if(c.kind==='kana'&&!c.boss)c.items.forEach(it=>KANA_POOL[w.id].push(it));
+  });
+}));
+
+/* ================= 每日一句（高頻口語經典句，依日期輪替） ================= */
+const DAILY={
+jp:[
+ {t:'お疲れ様でした',ro:'o·tsu·ka·re·sa·ma·de·shi·ta',zh:'辛苦了',note:'下班、下課、活動結束，日本社會的萬用收尾句。'},
+ {t:'よろしくお願いします',ro:'yo·ro·shi·ku o·ne·ga·i·shi·ma·su',zh:'請多指教',note:'自我介紹、拜託別人都用它，出場率極高。'},
+ {t:'いってきます',ro:'i·tte·ki·ma·su',zh:'我出門了',note:'出門前對家人說的一句，有「我會回來」的溫柔。'},
+ {t:'ただいま',ro:'ta·da·i·ma',zh:'我回來了',note:'進家門的第一句。'},
+ {t:'おかえりなさい',ro:'o·ka·e·ri·na·sa·i',zh:'歡迎回家',note:'回應ただいま的溫暖句。'},
+ {t:'お腹すいた',ro:'o·na·ka su·i·ta',zh:'肚子餓了',note:'口語感十足，動漫日常台詞前三名。'},
+ {t:'ちょっと待って',ro:'cho·tto ma·tte',zh:'等一下',note:'日常裡一天能聽到十次。'},
+ {t:'どういたしまして',ro:'do·u·i·ta·shi·ma·shi·te',zh:'不客氣',note:'回應謝謝的標準句。'},
+ {t:'お先に失礼します',ro:'o·sa·ki·ni shi·tsu·re·i·shi·ma·su',zh:'我先走了',note:'比同事早下班時的禮貌句，職場必備。'},
+ {t:'久しぶり！',ro:'hi·sa·shi·bu·ri',zh:'好久不見！',note:'朋友重逢第一句。'},
+ {t:'元気だった？',ro:'gen·ki da·tta',zh:'最近好嗎？',note:'久しぶり的最佳拍檔。'},
+ {t:'なるほど',ro:'na·ru·ho·do',zh:'原來如此',note:'聽人說話時的高級附和詞。'},
+ {t:'マジで？',ro:'ma·ji·de',zh:'真的假的？',note:'年輕人口語，驚訝時脫口而出。'},
+ {t:'しょうがない',ro:'sho·u·ga·na·i',zh:'沒辦法啦',note:'日本人的人生哲學，接受現實的一句。'},
+ {t:'頑張って！',ro:'gan·ba·tte',zh:'加油！',note:'為人打氣的國民句。'},
+ {t:'気をつけて',ro:'ki·o tsu·ke·te',zh:'路上小心',note:'送別時的溫柔叮嚀。'},
+ {t:'ごちそうさまでした',ro:'go·chi·so·u·sa·ma·de·shi·ta',zh:'我吃飽了，謝謝招待',note:'吃完飯的感謝儀式，跟いただきます成對。'},
+ {t:'お邪魔します',ro:'o·ja·ma·shi·ma·su',zh:'打擾了',note:'進別人家門必說，字面是「我來添麻煩了」。'},
+ {t:'もう一度お願いします',ro:'mo·u i·chi·do o·ne·ga·i·shi·ma·su',zh:'請再說一次',note:'聽不懂就大方說，學語言的保命句。'},
+ {t:'これ、いくらですか',ro:'ko·re i·ku·ra de·su·ka',zh:'這個多少錢？',note:'購物第一句。'},
+ {t:'トイレはどこですか',ro:'to·i·re wa do·ko de·su·ka',zh:'廁所在哪裡？',note:'旅行救命句。'},
+ {t:'大丈夫です',ro:'da·i·jo·u·bu de·su',zh:'沒關係／不用了',note:'既能安慰人也能婉拒，超萬用。'},
+ {t:'楽しみにしています',ro:'ta·no·shi·mi·ni shi·te·i·ma·su',zh:'我很期待',note:'約好下次見面時的漂亮結尾。'},
+ {t:'やばい！',ro:'ya·ba·i',zh:'糟了！／太讚了！',note:'好壞通用的年輕人萬能詞。'},
+ {t:'助かりました',ro:'ta·su·ka·ri·ma·shi·ta',zh:'幫大忙了',note:'比ありがとう更有感情的感謝。'},
+ {t:'お大事に',ro:'o·da·i·ji·ni',zh:'請保重',note:'對生病的人說，藥局店員的標配。'},
+ {t:'ゆっくり休んでね',ro:'yu·kku·ri ya·su·n·de·ne',zh:'好好休息喔',note:'關心疲憊朋友的溫柔句。'},
+ {t:'また連絡するね',ro:'ma·ta ren·ra·ku su·ru·ne',zh:'再聯絡喔',note:'道別時的自然收尾。'},
+ {t:'いい天気ですね',ro:'i·i ten·ki de·su·ne',zh:'天氣真好呢',note:'日本人開啟閒聊的第一招。'},
+ {t:'夢みたい',ro:'yu·me mi·ta·i',zh:'像做夢一樣',note:'開心到不敢相信時說。'},
+ {t:'いらっしゃいませ',ro:'i·ra·ssha·i·ma·se',zh:'歡迎光臨',note:'進任何店都會聽到，日本的背景音樂。'},
+],
+kr:[
+ {t:'수고하셨습니다',ro:'su·go·ha·syeo·sseum·ni·da',zh:'辛苦了',note:'下班下課的萬用收尾，跟日文お疲れ様一樣重要。'},
+ {t:'잘 부탁드립니다',ro:'jal bu·tak·deu·rim·ni·da',zh:'請多指教',note:'自我介紹的標準結尾。'},
+ {t:'다녀오겠습니다',ro:'da·nyeo·o·ge·sseum·ni·da',zh:'我出門了',note:'出門前對家人說。'},
+ {t:'다녀왔습니다',ro:'da·nyeo·wa·sseum·ni·da',zh:'我回來了',note:'進家門的第一句。'},
+ {t:'어서 오세요',ro:'eo·seo o·se·yo',zh:'歡迎光臨',note:'進店裡就會聽到，韓國的背景音樂。'},
+ {t:'배고파요',ro:'bae·go·pa·yo',zh:'肚子餓了',note:'배＝肚子、고프다＝餓，日常口語前三名。'},
+ {t:'잠깐만요',ro:'jam·kkan·man·yo',zh:'等一下',note:'擠地鐵借過時也用這句！'},
+ {t:'천만에요',ro:'cheon·man·e·yo',zh:'不客氣',note:'回應感謝的教科書句。'},
+ {t:'먼저 가볼게요',ro:'meon·jeo ga·bol·ge·yo',zh:'我先走囉',note:'聚會先離場的自然說法。'},
+ {t:'오랜만이에요',ro:'o·raen·man·i·e·yo',zh:'好久不見',note:'朋友重逢第一句。'},
+ {t:'잘 지냈어요?',ro:'jal ji·nae·sseo·yo',zh:'最近過得好嗎？',note:'오랜만이에요的最佳拍檔。'},
+ {t:'그렇구나',ro:'geu·reo·ku·na',zh:'原來如此',note:'聽人說話的高級附和詞。'},
+ {t:'진짜요?',ro:'jin·jja·yo',zh:'真的嗎？',note:'驚訝必備，진짜＝真的。'},
+ {t:'어쩔 수 없죠',ro:'eo·jjeol su eop·jyo',zh:'沒辦法啦',note:'接受現實的一句，跟日文しょうがない神同步。'},
+ {t:'화이팅!',ro:'hwa·i·ting',zh:'加油！',note:'從 fighting 來的國民打氣詞。'},
+ {t:'조심히 가세요',ro:'jo·sim·hi ga·se·yo',zh:'路上小心',note:'送別時的溫柔叮嚀。'},
+ {t:'잘 먹었습니다',ro:'jal meo·geo·sseum·ni·da',zh:'我吃飽了，謝謝招待',note:'吃完飯的感謝儀式，跟잘 먹겠습니다成對。'},
+ {t:'실례합니다',ro:'sil·lye·ham·ni·da',zh:'打擾了／不好意思',note:'漢字語「失禮」，進門、借過都能用。'},
+ {t:'다시 한번 말씀해 주세요',ro:'da·si han·beon mal·sseum·hae ju·se·yo',zh:'請再說一次',note:'聽不懂就大方說，學語言的保命句。'},
+ {t:'이거 얼마예요?',ro:'i·geo eol·ma·ye·yo',zh:'這個多少錢？',note:'購物第一句。'},
+ {t:'화장실이 어디예요?',ro:'hwa·jang·sil·i eo·di·ye·yo',zh:'廁所在哪裡？',note:'旅行救命句。'},
+ {t:'괜찮아요',ro:'gwaen·chan·a·yo',zh:'沒關係／不用了',note:'安慰、婉拒、逞強都用它，韓劇金句王。'},
+ {t:'기대돼요',ro:'gi·dae·dwae·yo',zh:'好期待',note:'約好下次的漂亮結尾。'},
+ {t:'대박!',ro:'dae·bak',zh:'太讚了！',note:'驚訝讚嘆的萬能詞。'},
+ {t:'덕분에 살았어요',ro:'deok·bun·e sal·a·sseo·yo',zh:'託你的福，得救了',note:'比감사합니다更有感情的感謝。'},
+ {t:'몸조리 잘하세요',ro:'mom·jo·ri jal·ha·se·yo',zh:'請保重身體',note:'對生病的人說。'},
+ {t:'푹 쉬세요',ro:'puk swi·se·yo',zh:'好好休息',note:'푹＝充分地，關心疲憊的人。'},
+ {t:'또 연락할게요',ro:'tto yeol·la·kal·ge·yo',zh:'再聯絡喔',note:'道別時的自然收尾。'},
+ {t:'날씨가 좋네요',ro:'nal·ssi·ga jon·ne·yo',zh:'天氣真好呢',note:'開啟閒聊的第一招。'},
+ {t:'꿈만 같아요',ro:'kkum·man ga·ta·yo',zh:'像做夢一樣',note:'開心到不敢相信時說。'},
+ {t:'맛있게 드세요',ro:'ma·sit·ge deu·se·yo',zh:'請慢用',note:'店員上菜必說，也可對同桌的人說。'},
+],
+};
 
 /* ================= 像素 sprite ================= */
 const PAL={G:'#7ce26a',D:'#2e8f4a',W:'#ffffff',B:'#1a1c2c',P:'#ff9edb',
@@ -1220,21 +1554,24 @@ const SFX={
  spark(){tone(1200+Math.random()*800,.04,0,'triangle',.05);},
 };
 
-/* ================= 日文發音（TTS） ================= */
+/* ================= 發音（TTS，日／韓） ================= */
 function ttsOK(){return 'speechSynthesis' in window;}
-let jaVoice=null;
+const VOICE={ja:null,ko:null},VLANG={ja:'ja-JP',ko:'ko-KR'};
 function pickVoice(){
   if(!ttsOK())return;
   const vs=speechSynthesis.getVoices();
-  jaVoice=vs.find(v=>v.lang&&v.lang.replace('_','-').toLowerCase().startsWith('ja'))||null;
+  for(const k in VOICE)
+    VOICE[k]=vs.find(v=>v.lang&&v.lang.replace('_','-').toLowerCase().startsWith(k))||null;
 }
 if(ttsOK()){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}
-function say(txt){
+function curLang(){return WORLDS[curWorld].tts;}
+function say(txt,lang){
   if(!ttsOK()||!txt)return;
+  lang=lang||curLang();
   try{
     speechSynthesis.cancel();
     const u=new SpeechSynthesisUtterance(txt);
-    u.lang='ja-JP';if(jaVoice)u.voice=jaVoice;u.rate=.85;
+    u.lang=VLANG[lang];if(VOICE[lang])u.voice=VOICE[lang];u.rate=.85;
     speechSynthesis.speak(u);
   }catch(e){}
 }
@@ -1258,6 +1595,8 @@ function go(id){
   window.scrollTo(0,0);
 }
 let curRegion='r0';
+let curWorld='jp';
+function WREGS(){return WORLDS[curWorld].regions;}
 
 /* ================= 進度與解鎖 ================= */
 function regionProgress(r){
@@ -1267,7 +1606,7 @@ function regionProgress(r){
 }
 function regionUnlocked(i){
   if(i===0)return true;
-  const p=regionProgress(REGIONS[i-1]);
+  const p=regionProgress(WREGS()[i-1]);
   return p.done>=Math.ceil(p.total/2);
 }
 function chapterUnlocked(r,idx){
@@ -1278,13 +1617,36 @@ function chapterUnlocked(r,idx){
 }
 function totalProgress(){
   let done=0,total=0;
-  REGIONS.forEach(r=>{total+=r.chapters.length;const p=regionProgress(r);done+=p.done;});
+  WREGS().forEach(r=>{total+=r.chapters.length;const p=regionProgress(r);done+=p.done;});
   return{done,total};
 }
 
-/* ================= 標題 / 世界地圖 ================= */
-function startGame(){ac();SFX.ok();go('map');renderMap();}
+/* ================= 標題 / 世界地圖 / 每日一句 ================= */
+function startGame(w){
+  curWorld=w||'jp';
+  save.world=curWorld;persist();
+  ac();SFX.ok();go('map');renderMap();
+  showDaily();
+}
+function dailyOf(w){
+  const d=new Date();
+  const doy=Math.floor((d-new Date(d.getFullYear(),0,0))/864e5);
+  const arr=DAILY[w];
+  return arr[doy%arr.length];
+}
+function showDaily(){
+  const s=dailyOf(curWorld);
+  $('daily-sent').textContent=s.t;
+  $('daily-ro').textContent=s.ro;
+  $('daily-zh').textContent=s.zh;
+  $('daily-note').textContent=s.note;
+  $('daily').classList.add('show');
+  setTimeout(()=>say(s.t),400);
+}
+function sayDaily(){say(dailyOf(curWorld).t);SFX.tap();}
+function closeDaily(){$('daily').classList.remove('show');SFX.ok();}
 function renderMap(){
+  $('map-title').textContent=WORLDS[curWorld].icon+' '+WORLDS[curWorld].name;
   const li=levelInfo(save.exp);
   const tp=totalProgress();
   const buf=save.nextBuff?BUFFS[save.nextBuff]:null;
@@ -1296,10 +1658,10 @@ function renderMap(){
     '<div class="bar"><div class="fill" style="width:'+Math.round(li.cur/li.need*100)+'%"></div></div>'+
     '<div class="small mono">EXP '+li.cur+' / '+li.need+'（總計 '+save.exp+'）　冒險進度 '+tp.done+' / '+tp.total+' 章</div>'+
     (buf?'<span class="bufchip">'+buf.icon+' 持有祝福：'+buf.name+'</span>':'');
-  $('regionlist').innerHTML=REGIONS.map((r,i)=>{
+  $('regionlist').innerHTML=WREGS().map((r,i)=>{
     const ok=regionUnlocked(i);
     const p=regionProgress(r);
-    const prev=i>0?REGIONS[i-1]:null;
+    const prev=i>0?WREGS()[i-1]:null;
     const req=prev?Math.ceil(prev.chapters.length/2):0;
     return '<div class="panel chcard regioncard'+(ok?'':' locked')+'"'+
       (ok?' onclick="openRegion(\''+r.id+'\')"':'')+'>'+
@@ -1313,13 +1675,14 @@ function renderMap(){
           :'<div class="small">🔒 通關「'+prev.name+'」'+req+' 章後解鎖</div>')+
       '</div></div>';
   }).join('');
-  REGIONS.forEach((r,i)=>drawSprite($('cv-r'+i),SPRITES[r.icon],4));
+  WREGS().forEach((r,i)=>drawSprite($('cv-r'+i),SPRITES[r.icon],4));
 }
 function openRegion(rid){
-  const ri=REGIONS.findIndex(r=>r.id===rid);
+  if(RMAP[rid])curWorld=RMAP[rid].world; // 從章節返回時保持大陸一致
+  const ri=WREGS().findIndex(r=>r.id===rid);
   if(!regionUnlocked(ri))return;
   curRegion=rid;
-  const r=REGIONS[ri];
+  const r=WREGS()[ri];
   SFX.tap();go('region');
   $('region-title').textContent=r.name;
   $('chlist').innerHTML=r.chapters.map((ch,i)=>{
@@ -1416,11 +1779,20 @@ function startBattle(chid){
   if(buff)toast(BUFFS[buff].icon+' 祝福發動：'+BUFFS[buff].desc);
   renderBstat();nextQ();
 }
-const TAUNTS={slime:'ぷるぷる～ 你聽得懂我在說什麼嗎？',cat:'にゃ～ 唸得出來再說吧！',
- ghost:'ふふふ… 這些字你記得住嗎？',bird:'ぴよぴよ！答慢一點我就飛走囉！',
- fox:'こんこん～ 人家可是很聰明的狐狸喔',oni:'哦？敢闖到這裡，有兩下子嘛！',
- dragon:'吼——想通過這裡，就用日文打敗我！'};
-function tauntOf(ch){return TAUNTS[ch.monster.sprite]||'……';}
+const TAUNTS={
+ jp:{slime:'ぷるぷる～ 你聽得懂我在說什麼嗎？',cat:'にゃ～ 唸得出來再說吧！',
+  ghost:'ふふふ… 這些字你記得住嗎？',bird:'ぴよぴよ！答慢一點我就飛走囉！',
+  fox:'こんこん～ 人家可是很聰明的狐狸喔',oni:'哦？敢闖到這裡，有兩下子嘛！',
+  dragon:'吼——想通過這裡，就用日文打敗我！'},
+ kr:{slime:'말랑말랑～ 你聽得懂我在說什麼嗎？',cat:'야옹～ 唸得出來再說吧！',
+  ghost:'흐흐흐… 這些字母你記得住嗎？',bird:'짹짹！答慢一點我就飛走囉！',
+  fox:'여우여우～ 人家可是很聰明的狐狸喔',oni:'어라？敢闖到這裡，有兩下子嘛！',
+  dragon:'크앙——想通過這裡，就用韓文打敗我！'},
+};
+function tauntOf(ch){
+  const w=RMAP[REGION_OF[ch.id]].world;
+  return TAUNTS[w][ch.monster.sprite]||'……';
+}
 function fleeBattle(){
   if(B&&B.timer){clearInterval(B.timer);B.timer=null;}
   toast('勇者悄悄地溜走了……（不扣任何東西）');
@@ -1438,9 +1810,10 @@ function nextQ(){
   const it=B.qs[B.qi];
   const listen=ttsOK()&&Math.random()<0.4;
   const kind=B.ch.kind;
+  const world=RMAP[REGION_OF[B.ch.id]].world;
   const optKey=(kind==='kana')?(listen?'jp':'ro'):'zh';
-  // 選項池：假名章節可跨章混入其他假名；同標籤（如 じ/ぢ 同音）去重
-  const cand=shuffle((kind==='kana'?KANA_ALL:B.ch.items).filter(x=>x!==it&&x[optKey]!==it[optKey]));
+  // 選項池：假名／字母章節可跨章混入同大陸的其他字；同標籤（如 じ/ぢ 同音）去重
+  const cand=shuffle((kind==='kana'?KANA_POOL[world]:B.ch.items).filter(x=>x!==it&&x[optKey]!==it[optKey]));
   const seen={};seen[it[optKey]]=1;
   const others=[];
   for(const c of cand){
@@ -1450,8 +1823,9 @@ function nextQ(){
   }
   B.cur={it,listen,optKey};
   B.opts=shuffle([it].concat(others));
+  const lt=WORLDS[world].letter;
   const ask=(kind==='kana')
-    ?(listen?'仔細聽！是哪一個假名？':'這個假名怎麼唸？')
+    ?(listen?'仔細聽！是哪一個'+lt+'？':'這個'+lt+'怎麼唸？')
     :(kind==='phrase'
       ?(listen?'仔細聽！這句是什麼意思？':'這句是什麼意思？')
       :(listen?'仔細聽！這個單字是什麼意思？':'這個單字是什麼意思？'));
@@ -1568,7 +1942,7 @@ function winBattle(){
   if(after.lv>before.lv)setTimeout(SFX.lvl,700);
   renderVictory({head:'VICTORY!',sprite:B.ch.monster.sprite,dead:true,
     lines:'擊敗 '+B.ch.monster.name+'！獲得 <b class="mono" style="color:var(--gold);">'+gained+' EXP</b>'+
-      (B.mul>1?'（經驗加倍中✨）':'')+(first?'<br><span class="small">首次通關加成 +'+(B.ch.boss?100:50)+'！'+(B.ch.boss?'主題「'+REGIONS.find(r=>r.id===curRegion).name+'」制霸！':'')+'</span>':''),
+      (B.mul>1?'（經驗加倍中✨）':'')+(first?'<br><span class="small">首次通關加成 +'+(B.ch.boss?100:50)+'！'+(B.ch.boss?'主題「'+RMAP[curRegion].name+'」制霸！':'')+'</span>':''),
     before,after});
 }
 function pickBuff(k,el){
