@@ -1,0 +1,1744 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>可不可愛、日文厲害</title>
+</head>
+<body>
+<style>
+:root{
+  --night:#1a1c2c;
+  --panel:#29366f;
+  --panel-hi:#3b5dc9;
+  --ink:#f4f4f4;
+  --dim:#94b0c2;
+  --gold:#ffcd75;
+  --pink:#ff9edb;
+  --green:#38b764;
+  --red:#e53b44;
+  --shadow:#0f0f1b;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--night);
+  color:var(--ink);
+  font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+#scan{position:fixed;inset:0;pointer-events:none;z-index:99;
+  background:repeating-linear-gradient(0deg,rgba(15,15,27,.16) 0 1px,transparent 1px 3px);}
+#stage{max-width:520px;margin:0 auto;padding:14px 12px 28px;min-height:100vh;display:flex;flex-direction:column;}
+.screen{display:none;flex-direction:column;gap:14px;flex:1;}
+.screen.on{display:flex;animation:popin .18s ease-out;}
+canvas.spr{image-rendering:pixelated;display:block;}
+
+.panel{background:var(--panel);border:4px solid var(--ink);box-shadow:0 6px 0 var(--shadow);
+  padding:14px;border-radius:2px;}
+.btn{font-family:inherit;font-size:16px;font-weight:700;color:var(--ink);
+  background:var(--panel-hi);border:3px solid var(--ink);box-shadow:0 4px 0 var(--shadow);
+  padding:10px 16px;cursor:pointer;border-radius:2px;line-height:1.3;}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--shadow);}
+.btn:focus-visible{outline:3px dashed var(--gold);outline-offset:2px;}
+.btn.gold{background:var(--gold);color:#3a2a00;}
+.btn.pink{background:var(--pink);color:#5a0f3c;}
+.btn.ghostbtn{background:transparent;color:var(--dim);border-color:var(--dim);}
+.btn:disabled{opacity:.35;cursor:default;}
+.btn:disabled:active{transform:none;box-shadow:0 4px 0 var(--shadow);}
+.tag{display:inline-block;font-size:12px;letter-spacing:2px;color:var(--dim);
+  border:2px solid var(--dim);padding:2px 8px;border-radius:2px;}
+.small{font-size:12px;color:var(--dim);line-height:1.6;}
+.mono{font-family:"Courier New",monospace;font-variant-numeric:tabular-nums;}
+
+/* ---------- title ---------- */
+#scr-title{justify-content:center;text-align:center;gap:22px;}
+.logo{font-weight:900;line-height:1.25;text-wrap:balance;}
+.logo .l1{display:block;font-size:38px;letter-spacing:8px;color:var(--pink);
+  text-shadow:3px 3px 0 var(--shadow),6px 6px 0 rgba(59,93,201,.55);}
+.logo .l2{display:block;font-size:38px;letter-spacing:8px;color:var(--gold);
+  text-shadow:3px 3px 0 var(--shadow),6px 6px 0 rgba(229,59,68,.45);}
+.logo .sub{display:block;margin-top:12px;font-size:13px;letter-spacing:4px;color:var(--dim);font-weight:400;}
+.vs{display:flex;justify-content:center;align-items:flex-end;gap:34px;}
+.vs .bob{animation:bob 1.6s ease-in-out infinite;}
+.vs .bob2{animation:bob 1.6s ease-in-out .8s infinite;}
+.pressstart{animation:blink 1.4s steps(2) infinite;}
+
+/* ---------- world map / hud ---------- */
+.hud{display:flex;flex-direction:column;gap:8px;}
+.hud .row1{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;}
+.hud .lv{font-size:20px;font-weight:900;color:var(--gold);}
+.hud .weapon{font-size:13px;color:var(--pink);}
+.bar{height:14px;border:3px solid var(--ink);background:var(--shadow);border-radius:2px;overflow:hidden;}
+.bar .fill{height:100%;background:var(--gold);transition:width .6s steps(12);}
+.bar .fill.grn{background:var(--green);}
+.bufchip{font-size:12px;color:#3a2a00;background:var(--gold);border:2px solid var(--ink);
+  padding:3px 8px;border-radius:2px;align-self:flex-start;}
+.chlist{display:flex;flex-direction:column;gap:14px;}
+.chcard{display:flex;gap:14px;align-items:center;cursor:default;}
+.chcard.locked{filter:grayscale(1) brightness(.6);}
+.chcard .info{flex:1;min-width:0;}
+.chcard h3{margin:0 0 4px;font-size:16px;}
+.chcard .preview{font-size:13px;color:var(--dim);letter-spacing:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.chcard .acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.chcard .acts .btn{font-size:13px;padding:7px 12px;}
+.star{color:var(--gold);font-size:13px;}
+.regioncard{cursor:pointer;}
+.regioncard .rprog{margin-top:8px;}
+.regioncard.locked{cursor:default;}
+
+/* ---------- learn ---------- */
+.dots{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.dots i{width:10px;height:10px;background:var(--shadow);border:2px solid var(--dim);}
+.dots i.onn{background:var(--gold);border-color:var(--ink);}
+.card3d{perspective:900px;cursor:pointer;}
+.cardinner{position:relative;transition:transform .45s;transform-style:preserve-3d;min-height:250px;}
+.card3d.flip .cardinner{transform:rotateY(180deg);}
+.cface{backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;
+  min-height:250px;padding:18px;text-align:center;}
+.cback{position:absolute;inset:0;transform:rotateY(180deg);background:var(--panel-hi);
+  border-radius:2px;}
+.bigjp{font-size:52px;font-weight:900;letter-spacing:2px;line-height:1.3;
+  text-shadow:3px 3px 0 var(--shadow);}
+.bigjp.phrase{font-size:28px;letter-spacing:0;}
+.romaji{font-size:15px;color:var(--gold);letter-spacing:3px;}
+.subkana{font-size:16px;color:var(--pink);letter-spacing:2px;}
+.meaning{font-size:28px;font-weight:900;color:var(--gold);text-shadow:2px 2px 0 var(--shadow);}
+.memo{font-size:14px;color:var(--ink);line-height:1.7;max-width:34ch;}
+.exline{font-size:14px;color:var(--gold);display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;}
+.learnnav{display:flex;gap:10px;}
+.learnnav .btn{flex:1;}
+
+/* ---------- battle ---------- */
+.mhead{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.mname{font-weight:900;font-size:15px;color:var(--pink);}
+.hpseg{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;}
+.hpseg i{width:14px;height:12px;background:var(--red);border:2px solid var(--ink);}
+.hpseg i.off{background:var(--shadow);}
+.mzone{position:relative;text-align:center;padding:10px 0 4px;}
+.mzone .sprwrap{display:inline-block;animation:bob 1.8s ease-in-out infinite;}
+.mzone.hit .sprwrap{animation:hitflash .35s steps(2);}
+.taunt{font-size:12px;color:var(--dim);margin-top:6px;letter-spacing:1px;}
+.floaty{position:absolute;left:50%;top:14%;transform:translate(-50%,0);
+  font-weight:900;font-size:24px;color:var(--ink);text-shadow:2px 2px 0 var(--shadow);
+  animation:floatup .9s ease-out forwards;pointer-events:none;white-space:nowrap;}
+.floaty.crit{color:var(--gold);font-size:30px;}
+.tbar{height:12px;border:3px solid var(--ink);background:var(--shadow);overflow:hidden;}
+.tbar .tfill{height:100%;width:100%;background:var(--green);}
+.tbar .tfill.hurry{background:var(--red);}
+.qbox{text-align:center;min-height:96px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;}
+.qword{font-size:42px;font-weight:900;text-shadow:3px 3px 0 var(--shadow);}
+.qword.phrase{font-size:24px;}
+.qask{font-size:13px;color:var(--dim);letter-spacing:2px;}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.opts .btn{min-height:56px;font-size:17px;}
+.opts .btn.right{background:var(--green);}
+.opts .btn.wrong{background:var(--red);}
+.bstat{display:flex;justify-content:space-between;align-items:center;font-size:14px;gap:8px;}
+.hearts{color:var(--red);font-size:20px;letter-spacing:3px;text-shadow:1px 1px 0 var(--shadow);}
+.expchip{color:var(--gold);font-weight:700;}
+.battlewrap.shake{animation:shake .45s steps(6);}
+
+/* ---------- result ---------- */
+.rtitle{font-size:30px;font-weight:900;text-align:center;letter-spacing:6px;
+  text-shadow:3px 3px 0 var(--shadow);}
+.rtitle.winc{color:var(--gold);}
+.rtitle.losec{color:var(--red);}
+.rexp{text-align:center;font-size:18px;}
+.lvup{background:var(--gold);color:#3a2a00;border:3px solid var(--ink);box-shadow:0 4px 0 var(--shadow);
+  padding:10px;text-align:center;font-weight:900;letter-spacing:2px;animation:popin .4s;}
+.buffrow{display:flex;gap:10px;}
+.buffcard{flex:1;background:var(--panel-hi);border:3px solid var(--ink);box-shadow:0 4px 0 var(--shadow);
+  padding:12px 8px;text-align:center;cursor:pointer;border-radius:2px;}
+.buffcard .bic{font-size:26px;}
+.buffcard h4{margin:6px 0 4px;font-size:14px;color:var(--gold);}
+.buffcard p{margin:0;font-size:12px;color:var(--ink);line-height:1.5;}
+.buffcard.dead{opacity:.3;pointer-events:none;}
+.buffcard.picked{background:var(--green);}
+.deadspr{filter:grayscale(1) brightness(.7);transform:rotate(110deg);display:inline-block;}
+
+/* ---------- talk (對話劇情) ---------- */
+.talkjp{font-size:20px;font-weight:900;line-height:1.7;margin:6px 0 4px;}
+.talkopt{text-align:left;display:flex;flex-direction:column;gap:2px;}
+.talkopt.right{background:var(--green);}
+.talkopt.wrong{background:var(--red);}
+.npcbox{display:flex;align-items:center;gap:14px;}
+
+/* ---------- write ---------- */
+.kanachips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.kanachips .btn{font-size:20px;padding:6px 14px;}
+.kanachips .btn.onn{background:var(--gold);color:#3a2a00;}
+.writebox{position:relative;width:300px;height:300px;margin:0 auto;
+  border:4px dashed var(--dim);background:rgba(15,15,27,.5);}
+.writebox canvas{position:absolute;inset:0;width:100%;height:100%;}
+#cv-fx{touch-action:none;cursor:crosshair;}
+.writeacts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+
+#toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(120px);
+  background:var(--gold);color:#3a2a00;font-weight:900;border:3px solid var(--ink);
+  box-shadow:0 4px 0 var(--shadow);padding:10px 18px;z-index:120;transition:transform .25s;
+  border-radius:2px;pointer-events:none;max-width:90vw;text-align:center;line-height:1.5;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+
+.screenhead{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.screenhead h2{margin:0;font-size:17px;letter-spacing:1px;}
+.backbtn{font-size:13px;padding:6px 10px;}
+
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+@keyframes hitflash{0%,100%{filter:none}50%{filter:brightness(3) saturate(0);}}
+@keyframes floatup{0%{opacity:1;transform:translate(-50%,0) scale(1)}100%{opacity:0;transform:translate(-50%,-70px) scale(1.15)}}
+@keyframes popin{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;}
+}
+</style>
+
+<div id="scan"></div>
+<div id="stage">
+
+  <!-- 標題畫面 -->
+  <div class="screen" id="scr-title">
+    <div class="tag" style="align-self:center;">PIXEL RPG × 日本語　新手村 → N1 魔王城</div>
+    <h1 class="logo" style="margin:0;">
+      <span class="l1">可不可愛</span>
+      <span class="l2">日文厲害</span>
+      <span class="sub">KAWAII QUEST ─ 從五十音打到 N1 的日文冒險</span>
+    </h1>
+    <div class="vs">
+      <span class="bob"><canvas class="spr" id="cv-hero"></canvas></span>
+      <span style="color:var(--dim);font-weight:900;">VS</span>
+      <span class="bob2"><canvas class="spr" id="cv-boss-t"></canvas></span>
+    </div>
+    <button class="btn gold pressstart" style="align-self:center;font-size:19px;padding:14px 34px;" onclick="startGame()">▶ 開始冒險</button>
+    <p class="small" style="text-align:center;margin:0;">
+      免安裝・進度自動存在這台裝置的瀏覽器<br>
+      建議開啟聲音，體驗 8-bit 音效與日文發音
+    </p>
+    <button class="btn ghostbtn" style="align-self:center;font-size:12px;padding:5px 10px;" onclick="resetSave()">重置進度</button>
+  </div>
+
+  <!-- 世界地圖（區域選擇） -->
+  <div class="screen" id="scr-map">
+    <div class="panel hud" id="hud"></div>
+    <div class="chlist" id="regionlist"></div>
+    <p class="small" style="text-align:center;margin:0;">每個區域通關一半以上，就會開啟下一個區域</p>
+  </div>
+
+  <!-- 區域（章節選擇） -->
+  <div class="screen" id="scr-region">
+    <div class="screenhead">
+      <h2 id="region-title"></h2>
+      <button class="btn ghostbtn backbtn" onclick="go('map');renderMap()">← 世界地圖</button>
+    </div>
+    <div class="chlist" id="chlist"></div>
+  </div>
+
+  <!-- 學習模式 -->
+  <div class="screen" id="scr-learn">
+    <div class="screenhead">
+      <h2 id="learn-title"></h2>
+      <button class="btn ghostbtn backbtn" onclick="openRegion(curRegion)">← 返回</button>
+    </div>
+    <div class="dots" id="learn-dots"></div>
+    <div class="card3d" id="learn-card" onclick="flipCard()"></div>
+    <p class="small" style="text-align:center;margin:0;">點卡片翻面看意思與聯想記憶</p>
+    <div class="learnnav">
+      <button class="btn" id="learn-prev" onclick="navLearn(-1)">← 上一張</button>
+      <button class="btn" id="learn-next" onclick="navLearn(1)">下一張 →</button>
+    </div>
+    <button class="btn pink" id="learn-fight" style="font-size:17px;"></button>
+  </div>
+
+  <!-- 戰鬥 -->
+  <div class="screen" id="scr-battle">
+    <div class="battlewrap" id="battlewrap" style="display:flex;flex-direction:column;gap:14px;">
+      <div class="panel" style="display:flex;flex-direction:column;gap:8px;">
+        <div class="mhead">
+          <span class="mname" id="b-mname"></span>
+          <span class="hpseg" id="b-hp"></span>
+        </div>
+        <div class="mzone" id="b-mzone">
+          <span class="sprwrap"><canvas class="spr" id="cv-monster"></canvas></span>
+          <div class="taunt" id="b-taunt"></div>
+        </div>
+      </div>
+      <div class="tbar"><div class="tfill" id="b-tfill"></div></div>
+      <div class="panel qbox" id="b-qbox"></div>
+      <div class="opts" id="b-opts"></div>
+      <div class="bstat">
+        <span class="hearts" id="b-hearts"></span>
+        <button class="btn ghostbtn" style="font-size:12px;padding:4px 8px;" onclick="fleeBattle()">🏳 逃走</button>
+        <span class="expchip mono" id="b-exp"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 對話劇情 -->
+  <div class="screen" id="scr-talk">
+    <div class="screenhead">
+      <h2 id="talk-title"></h2>
+      <button class="btn ghostbtn backbtn" onclick="openRegion(curRegion)">← 返回</button>
+    </div>
+    <div class="panel npcbox">
+      <canvas class="spr" id="cv-npc"></canvas>
+      <div>
+        <div class="mname" id="talk-npcname"></div>
+        <div class="small" id="talk-progress"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="talkjp" id="talk-jp"></div>
+      <div class="small" id="talk-zh"></div>
+      <button class="btn" style="font-size:13px;padding:6px 10px;margin-top:8px;" onclick="sayTalk()">🔊 再聽一次</button>
+    </div>
+    <p class="small" style="text-align:center;margin:0;">選出最自然的回應（選錯不扣血，會告訴你為什麼）</p>
+    <div id="talk-opts" style="display:flex;flex-direction:column;gap:10px;"></div>
+  </div>
+
+  <!-- 結算 -->
+  <div class="screen" id="scr-result" style="justify-content:center;">
+    <div id="result-body" style="display:flex;flex-direction:column;gap:16px;"></div>
+  </div>
+
+  <!-- 畫符文（寫字） -->
+  <div class="screen" id="scr-write">
+    <div class="screenhead">
+      <h2 id="write-title">✍ 符文修行</h2>
+      <button class="btn ghostbtn backbtn" onclick="openRegion(curRegion)">← 返回</button>
+    </div>
+    <div class="kanachips" id="write-chips"></div>
+    <div class="panel" id="write-memo" style="padding:10px 12px;font-size:14px;line-height:1.7;"></div>
+    <div class="writebox">
+      <canvas id="cv-guide" width="600" height="600"></canvas>
+      <canvas id="cv-ink" width="600" height="600"></canvas>
+      <canvas id="cv-fx" width="600" height="600"></canvas>
+    </div>
+    <p class="small" style="text-align:center;margin:0;">沿著灰色的字，用手指或滑鼠一筆一畫描出符文</p>
+    <div class="writeacts">
+      <button class="btn" onclick="clearInk()">清除重寫</button>
+      <button class="btn" onclick="sayCurrentKana()">🔊 聽發音</button>
+      <button class="btn gold" onclick="finishWrite()">⚡ 注入靈力</button>
+    </div>
+  </div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* ================= 內容資料 ================= */
+// 假名章節：[假名, 羅馬音, 聯想記憶, 代表例字]
+function kanaCh(id,name,mon,spr,arr){
+  return {id,name,kind:'kana',monster:{name:mon,sprite:spr},
+    items:arr.map(a=>({jp:a[0],ro:a[1],zh:a[1],memo:a[2],ex:a[3]}))};
+}
+// 單字：假名為主（N5/N4）
+function vh(kana,kanji,zh,memo){return {jp:kana,sub:kanji,kana:kana,zh,memo};}
+// 單字：漢字為主（N3+），sub 為假名讀音
+function vk(kanji,kana,zh,memo){return {jp:kanji,sub:kana,kana:kana,zh,memo};}
+function vocabCh(id,name,mon,spr,items){return {id,name,kind:'vocab',monster:{name:mon,sprite:spr},items};}
+function phraseCh(id,name,mon,spr,items){return {id,name,kind:'phrase',monster:{name:mon,sprite:spr},items};}
+
+const REGIONS=[
+{id:'r0',icon:'slime',name:'新手村',desc:'先會打招呼，冒險就成功一半',chapters:[
+  phraseCh('c1','勇者的第一句話','見習史萊姆','slime',[
+    {jp:'ありがとう',ro:'a·ri·ga·to·u',zh:'謝謝',memo:'動漫出現率 No.1，先學先贏！'},
+    {jp:'すごい',ro:'su·go·i',zh:'好厲害',memo:'看到必殺技時就大喊一聲！'},
+    {jp:'かわいい',ro:'ka·wa·i·i',zh:'好可愛',memo:'本遊戲的核心精神，務必熟練。'},
+    {jp:'おはよう',ro:'o·ha·yo·u',zh:'早安',memo:'對村民打招呼會提升好感度（大概）。'},
+    {jp:'だいじょうぶ',ro:'da·i·jo·u·bu',zh:'沒問題',memo:'被史萊姆撞到時也要保持微笑說的話。'},
+    {jp:'いただきます',ro:'i·ta·da·ki·ma·su',zh:'開動了',memo:'在旅館吃晚餐前的神聖儀式。'},
+  ]),
+  phraseCh('c1b','寒暄修行','寒暄史萊姆','slime',[
+    {jp:'こんにちは',ro:'ko·n·ni·chi·wa',zh:'你好（白天）',memo:'白天的萬用招呼，寫は唸 wa。'},
+    {jp:'こんばんは',ro:'ko·n·ba·n·wa',zh:'晚上好',memo:'太陽下山後改用這句。'},
+    {jp:'すみません',ro:'su·mi·ma·se·n',zh:'不好意思',memo:'叫店員、借過、道歉，一句三用的神句。'},
+    {jp:'ごめんなさい',ro:'go·me·n·na·sa·i',zh:'對不起',memo:'比すみません更正式的道歉。'},
+    {jp:'おやすみなさい',ro:'o·ya·su·mi·na·sa·i',zh:'晚安（睡前）',memo:'睡覺前說的，跟こんばんは不同！'},
+    {jp:'はじめまして',ro:'ha·ji·me·ma·shi·te',zh:'初次見面',memo:'自我介紹的開場白。'},
+    {jp:'またね',ro:'ma·ta·ne',zh:'下次見',memo:'朋友之間輕鬆的再見。'},
+  ]),
+]},
+{id:'r1',icon:'cat',name:'五十音之森',desc:'集齊假名，才能讀懂這個世界',chapters:[
+  kanaCh('c2','あ行','假名貓貓','cat',[
+    ['あ','a','源自「安」：張開雙手、肚子大大的安心媽媽。','あさ（早上）'],
+    ['い','i','源自「以」：兩條並肩游泳的小魚。','いぬ（狗）'],
+    ['う','u','源自「宇」：從屋頂探出頭的宇宙人。','うみ（海）'],
+    ['え','e','源自「衣」：正在溜滑梯的忍者。','えき（車站）'],
+    ['お','o','源自「於」：揮著手大喊「喔～」的大叔。','おちゃ（茶）'],
+  ]),
+  kanaCh('c3','か行','五十音幽靈','ghost',[
+    ['か','ka','源自「加」：武士舉刀大喊一聲「喀！」。','かさ（傘）'],
+    ['き','ki','唸 ki，長得也像一把鑰匙（key）。','きもの（和服）'],
+    ['く','ku','小鳥張開的嘴巴，「咕、咕」地叫。','くつ（鞋子）'],
+    ['け','ke','源自「計」：毛毛蟲慢慢爬過小柵欄。','けさ（今天早上）'],
+    ['こ','ko','源自「己」：疊在一起的兩片小餅乾。','こども（小孩）'],
+  ]),
+  kanaCh('c4','さ行','さ行小鳥','bird',[
+    ['さ','sa','源自「左」：往西瓜劃下的一刀「唰！」。','さかな（魚）'],
+    ['し','shi','一根釣魚鉤。日文的 4 也唸 し。','しろ（白色）'],
+    ['す','su','源自「寸」：中間捲了一圈小漩渦「咻～」。','すし（壽司）'],
+    ['せ','se','源自「世」：張著嘴的側臉。','せんせい（老師）'],
+    ['そ','so','一道劈下來的閃電「唆！」。','そら（天空）'],
+  ]),
+  kanaCh('c5','た行','た行史萊姆','slime',[
+    ['た','ta','拆開看是「t＋a」的組合。','たまご（蛋）'],
+    ['ち','chi','像反過來的數字 5，唸 chi。','ちず（地圖）'],
+    ['つ','tsu','海面上的一朵小波浪，tsu～。','つき（月亮）'],
+    ['て','te','源自「天」：伸出來的一隻手（て＝手）。','て（手）'],
+    ['と','to','腳趾（toe）上扎了一根小刺。','とり（鳥）'],
+  ]),
+  kanaCh('c6','な行','な行狐狸','fox',[
+    ['な','na','十字架旁邊打了一個結。','なつ（夏天）'],
+    ['に','ni','源自「仁」：左邊一個人，右邊二條線＝ni（二）。','にく（肉）'],
+    ['ぬ','nu','一碗滑溜溜的麵條（noodle）。','ぬいぐるみ（布偶）'],
+    ['ね','ne','尾巴打結的貓（ねこ）。','ねこ（貓）'],
+    ['の','no','禁止標誌，NO！最常見的假名。','のり（海苔）'],
+  ]),
+  kanaCh('c7','は行','は行貓貓','cat',[
+    ['は','ha','左邊 l 右邊像 t＋a，笑聲「哈」。當助詞時唸 wa。','はな（花）'],
+    ['ひ','hi','咧嘴笑到瞇眼的臉「嘻～」。','ひと（人）'],
+    ['ふ','fu','富士山（ふじさん）的稜線。','ふゆ（冬天）'],
+    ['へ','he','一座矮矮的小山坡。最好認的假名。','へや（房間）'],
+    ['ほ','ho','帆船上掛滿風的帆。','ほし（星星）'],
+  ]),
+  kanaCh('c8','ま行','ま行小鳥','bird',[
+    ['ま','ma','源自「末」：一根捲捲的棒棒糖，媽媽的 ma。','まど（窗戶）'],
+    ['み','mi','像數字 21，唸 mi（三）。','みず（水）'],
+    ['む','mu','乳牛的叫聲「哞～」。','むし（蟲）'],
+    ['め','me','源自「女」：一顆眼睛（め＝眼）。','め（眼睛）'],
+    ['も','mo','魚鉤上掛了一條小蚯蚓。','もも（桃子）'],
+  ]),
+  kanaCh('c9','や行','や行史萊姆','slime',[
+    ['や','ya','源自「也」：氂牛（yak）的角。','やま（山）'],
+    ['ゆ','yu','溫泉標誌裡游泳的小魚，湯（ゆ）！','ゆき（雪）'],
+    ['よ','yo','一顆溜溜球（yo-yo）。','よる（晚上）'],
+  ]),
+  kanaCh('c10','ら行','ら行狐狸','fox',[
+    ['ら','ra','源自「良」：DJ 手上的黑膠唱盤。','らいねん（明年）'],
+    ['り','ri','源自「利」：兩條並行的小河（り＝川的感覺）。','りんご（蘋果）'],
+    ['る','ru','尾巴在最後捲了一個圈（loop）。','るす（不在家）'],
+    ['れ','re','跪坐後又站起來的人。','れきし（歷史）'],
+    ['ろ','ro','方方正正的數字 3。','ろうそく（蠟燭）'],
+  ]),
+  kanaCh('c11','わ行＋ん','わ行幽靈','ghost',[
+    ['わ','wa','源自「和」：驚訝地張大嘴「哇！」。','わたし（我）'],
+    ['を','wo','只在當受詞助詞時登場的稀有假名。','ほんをよむ（讀書）'],
+    ['ん','n','唯一的鼻音，思考時的「嗯～」。','ぱん（麵包）'],
+  ]),
+  kanaCh('c12','濁音①（が・ざ行）','濁音赤鬼','oni',[
+    ['が','ga','か＋゛兩點：喉嚨振動，ka → ga。','がっこう（學校）'],
+    ['ぎ','gi','き＋゛：ki → gi。','ぎんこう（銀行）'],
+    ['ぐ','gu','く＋゛：ku → gu。','かぐ（家具）'],
+    ['げ','ge','け＋゛：ke → ge。','げんき（有精神）'],
+    ['ご','go','こ＋゛：ko → go。ごはん的 go！','ごはん（飯）'],
+    ['ざ','za','さ＋゛：sa → za。','ざっし（雜誌）'],
+    ['じ','ji','し＋゛：shi → ji。','じかん（時間）'],
+    ['ず','zu','す＋゛：su → zu。','ずっと（一直）'],
+    ['ぜ','ze','せ＋゛：se → ze。','ぜんぶ（全部）'],
+    ['ぞ','zo','そ＋゛：so → zo。','ぞう（大象）'],
+  ]),
+  kanaCh('c13','濁音②（だ・ば行）','濁音赤鬼・弟','oni',[
+    ['だ','da','た＋゛：ta → da。だいじょうぶ的 da！','だいがく（大學）'],
+    ['ぢ','ji(di)','ち＋゛：極少登場，多半寫成じ。','はなぢ（流鼻血）'],
+    ['づ','zu(du)','つ＋゛：極少登場，多半寫成ず。','てづくり（手作）'],
+    ['で','de','て＋゛：te → de。','でんわ（電話）'],
+    ['ど','do','と＋゛：to → do。','どこ（哪裡）'],
+    ['ば','ba','は＋゛：ha → ba。','ばんごはん（晚餐）'],
+    ['び','bi','ひ＋゛：hi → bi。','びょういん（醫院）'],
+    ['ぶ','bu','ふ＋゛：fu → bu。','ぶたにく（豬肉）'],
+    ['べ','be','へ＋゛：he → be。','べんとう（便當）'],
+    ['ぼ','bo','ほ＋゛：ho → bo。','ぼうし（帽子）'],
+  ]),
+  kanaCh('c14','半濁音（ぱ行）','啵啵小鳥','bird',[
+    ['ぱ','pa','は＋゜小圈圈：啵一聲的 pa。','ぱん（麵包）'],
+    ['ぴ','pi','ひ＋゜：pi。ぴかぴか（亮晶晶）！','ぴかぴか（亮晶晶）'],
+    ['ぷ','pu','ふ＋゜：pu。','てんぷら（天婦羅）'],
+    ['ぺ','pe','へ＋゜：pe。','ぺらぺら（外語流利）'],
+    ['ぽ','po','ほ＋゜：po。','さんぽ（散步）'],
+  ]),
+  kanaCh('c15','拗音精選','拗音狐仙','fox',[
+    ['きゃ','kya','き＋小小的ゃ，合唸一拍：kya。','きゃく（客人）'],
+    ['きゅ','kyu','き＋小ゅ：kyu。','きゅうり（小黃瓜）'],
+    ['きょ','kyo','き＋小ょ：kyo。きょう（今天）！','きょう（今天）'],
+    ['しゃ','sha','し＋小ゃ：sha。','しゃしん（照片）'],
+    ['しゅ','shu','し＋小ゅ：shu。しゅくだい（作業）…','しゅくだい（作業）'],
+    ['しょ','sho','し＋小ょ：sho。','しょうゆ（醬油）'],
+    ['ちゃ','cha','ち＋小ゃ：cha。おちゃ（茶）！','おちゃ（茶）'],
+    ['ちゅ','chu','ち＋小ゅ：chu。','ちゅうごく（中國）'],
+    ['ちょ','cho','ち＋小ょ：cho。ちょっと（等等）！','ちょっと（稍微）'],
+  ]),
+]},
+{id:'r2',icon:'bird',name:'旅人驛站',desc:'旅遊實戰句，落地日本就能用',chapters:[
+  phraseCh('t1','移動篇','迷路小鳥','bird',[
+    {jp:'えきはどこですか？',ro:'e·ki·wa·do·ko·de·su·ka',zh:'車站在哪裡？',memo:'把えき換成トイレ、ホテル都通用！'},
+    {jp:'いくらですか？',ro:'i·ku·ra·de·su·ka',zh:'多少錢？',memo:'旅遊使用率最高的一句。'},
+    {jp:'これをください',ro:'ko·re·o·ku·da·sa·i',zh:'請給我這個',memo:'指著菜單或商品說，萬能句。'},
+    {jp:'まっすぐです',ro:'ma·s·su·gu·de·su',zh:'直走',memo:'問路時最常聽到的回答。'},
+    {jp:'みぎにまがってください',ro:'mi·gi·ni·ma·ga·t·te',zh:'請右轉',memo:'みぎ＝右、ひだり＝左，搭計程車必備。'},
+    {jp:'タクシーをよんでください',ro:'ta·ku·shi·i·o·yo·n·de',zh:'請幫我叫計程車',memo:'在旅館櫃台說這句就對了。'},
+  ]),
+  phraseCh('t2','餐廳篇','貪吃史萊姆','slime',[
+    {jp:'おすすめはなんですか？',ro:'o·su·su·me·wa·na·n·de·su·ka',zh:'推薦什麼？',memo:'讓店家推坑，通常不會踩雷。'},
+    {jp:'メニューをください',ro:'me·nyu·u·o·ku·da·sa·i',zh:'請給我菜單',memo:'坐下後的第一句。'},
+    {jp:'おみずをください',ro:'o·mi·zu·o·ku·da·sa·i',zh:'請給我水',memo:'日本餐廳的水通常免費。'},
+    {jp:'よやくしています',ro:'yo·ya·ku·shi·te·i·ma·su',zh:'我有預約',memo:'進店報上這句＋名字。'},
+    {jp:'おかいけいおねがいします',ro:'o·ka·i·ke·i·o·ne·ga·i',zh:'請結帳',memo:'吃完呼喚店員用。'},
+    {jp:'おいしかったです',ro:'o·i·shi·ka·t·ta·de·su',zh:'（剛才）很好吃',memo:'吃完的過去式，店家聽了會很開心。'},
+  ]),
+  phraseCh('t3','購物篇','商人狐狸','fox',[
+    {jp:'これはいくらですか？',ro:'ko·re·wa·i·ku·ra·de·su·ka',zh:'這個多少錢？',memo:'指著商品問就行。'},
+    {jp:'ためしてもいいですか？',ro:'ta·me·shi·te·mo·i·i·de·su·ka',zh:'可以試穿／試用嗎？',memo:'買衣服鞋子前先問一聲。'},
+    {jp:'カードでおねがいします',ro:'ka·a·do·de·o·ne·ga·i',zh:'我要刷卡',memo:'現金的話說「げんきんで」。'},
+    {jp:'ふくろをください',ro:'fu·ku·ro·o·ku·da·sa·i',zh:'請給我袋子',memo:'日本袋子多半要加購喔。'},
+    {jp:'めんぜいできますか？',ro:'me·n·ze·i·de·ki·ma·su·ka',zh:'可以免稅嗎？',memo:'記得帶護照！'},
+    {jp:'ちょっとかんがえます',ro:'cho·t·to·ka·n·ga·e·ma·su',zh:'我再想想',memo:'不想買時的禮貌脫身句。'},
+  ]),
+  phraseCh('t4','旅館篇','溫泉貓貓','cat',[
+    {jp:'チェックインおねがいします',ro:'che·k·ku·i·n·o·ne·ga·i',zh:'我要辦入住',memo:'到櫃台的第一句。'},
+    {jp:'なんじまでですか？',ro:'na·n·ji·ma·de·de·su·ka',zh:'到幾點為止？',memo:'問早餐、大浴場、退房時間都好用。'},
+    {jp:'にもつをあずかってもらえますか？',ro:'ni·mo·tsu·o·a·zu·ka·t·te',zh:'可以寄放行李嗎？',memo:'退房後想繼續逛街的救星。'},
+    {jp:'WiFiのパスワードはなんですか？',ro:'wi·fi·no·pa·su·wa·a·do',zh:'WiFi 密碼是什麼？',memo:'現代旅人的生命線。'},
+    {jp:'おせわになりました',ro:'o·se·wa·ni·na·ri·ma·shi·ta',zh:'受您照顧了',memo:'退房時說這句，好感度爆表。'},
+  ]),
+  phraseCh('t5','緊急篇','慌張幽靈','ghost',[
+    {jp:'たすけてください',ro:'ta·su·ke·te·ku·da·sa·i',zh:'請幫幫我',memo:'遇到麻煩時大聲說出來。'},
+    {jp:'みちにまよいました',ro:'mi·chi·ni·ma·yo·i·ma·shi·ta',zh:'我迷路了',memo:'配上手機地圖一起求助。'},
+    {jp:'きぶんがわるいです',ro:'ki·bu·n·ga·wa·ru·i·de·su',zh:'我不舒服',memo:'身體不適時讓周圍的人知道。'},
+    {jp:'パスポートをなくしました',ro:'pa·su·po·o·to·o·na·ku·shi·ma·shi·ta',zh:'我的護照弄丟了',memo:'希望永遠用不到的一句。'},
+    {jp:'にほんごがすこししかわかりません',ro:'ni·ho·n·go·ga·su·ko·shi·shi·ka',zh:'我只會一點日文',memo:'說完對方就會放慢速度講。'},
+  ]),
+]},
+{id:'r3',icon:'fox',name:'月見酒館',desc:'跟 NPC 實戰聊天，練出會話反應',chapters:[
+  {id:'d1',name:'初次見面',kind:'talk',npc:{name:'村民小花',sprite:'cat'},steps:[
+    {jp:'はじめまして！わたしはハナです。おなまえは？',zh:'初次見面！我是小花。請問你的名字？',ch:[
+      {jp:'わたしはユウです。よろしくおねがいします',zh:'我是小勇，請多指教',ok:1},
+      {jp:'さようなら',zh:'再見',why:'人家才剛自我介紹，馬上說再見太失禮啦！'},
+      {jp:'おかいけいおねがいします',zh:'請幫我結帳',why:'這裡不是餐廳喔！'},
+    ]},
+    {jp:'ユウさんはどこからきましたか？',zh:'小勇是從哪裡來的呢？',ch:[
+      {jp:'たいわんからきました',zh:'我從台灣來',ok:1},
+      {jp:'はい、そうです',zh:'是的，沒錯',why:'對方問的是「哪裡」，要回答地點喔。'},
+      {jp:'おみずをください',zh:'請給我水',why:'突然點餐，小花會嚇一跳！'},
+    ]},
+    {jp:'わあ、たいわん！りょこうですか？',zh:'哇，台灣！是來旅行的嗎？',ch:[
+      {jp:'はい、りょこうです',zh:'對，是來旅行的',ok:1},
+      {jp:'みぎにまがってください',zh:'請右轉',why:'沒有人在問路啦！'},
+      {jp:'いいえ、ハナです',zh:'不，我是小花',why:'你不是小花，她才是小花……'},
+    ]},
+    {jp:'にほんはどうですか？',zh:'覺得日本怎麼樣？',ch:[
+      {jp:'とてもたのしいです！',zh:'非常開心！',ok:1},
+      {jp:'いくらですか？',zh:'多少錢？',why:'感想不能用錢衡量喔！'},
+      {jp:'ちこくしました',zh:'我遲到了',why:'話題完全接不上啦。'},
+    ]},
+    {jp:'これからもにほんごがんばってね！またね！',zh:'今後日文也要加油喔！下次見！',ch:[
+      {jp:'ありがとう！またね！',zh:'謝謝！下次見！',ok:1},
+      {jp:'はじめまして',zh:'初次見面',why:'都聊完了才說初次見面，時空錯亂！'},
+      {jp:'メニューをください',zh:'請給我菜單',why:'到最後還是想點餐嗎！'},
+    ]},
+  ]},
+  {id:'d2',name:'便利商店',kind:'talk',npc:{name:'店員小啾',sprite:'bird'},steps:[
+    {jp:'いらっしゃいませ！',zh:'歡迎光臨！',ch:[
+      {jp:'（拿起飯糰）これをください',zh:'請給我這個',ok:1},
+      {jp:'ただいま',zh:'我回來了',why:'那是回自己家說的話，店員會愣住。'},
+      {jp:'はじめまして',zh:'初次見面',why:'跟店員不用自我介紹啦！'},
+    ]},
+    {jp:'おにぎり、あたためますか？',zh:'飯糰要加熱嗎？',ch:[
+      {jp:'はい、おねがいします',zh:'好的，麻煩了',ok:1},
+      {jp:'まっすぐです',zh:'直走',why:'店員問的是加熱，不是問路。'},
+      {jp:'わたしはユウです',zh:'我是小勇',why:'店員：所以飯糰要不要加熱……'},
+    ]},
+    {jp:'ふくろはいりますか？',zh:'需要袋子嗎？',ch:[
+      {jp:'いいえ、だいじょうぶです',zh:'不用，沒關係',ok:1},
+      {jp:'たすけてください',zh:'救命！',why:'只是問要不要袋子，先冷靜！'},
+      {jp:'おやすみなさい',zh:'晚安（睡前）',why:'還沒到睡覺時間喔。'},
+    ]},
+    {jp:'ぜんぶで３００えんです',zh:'總共 300 日圓',ch:[
+      {jp:'カードでおねがいします',zh:'我要刷卡',ok:1},
+      {jp:'めんぜいできますか？',zh:'可以免稅嗎？',why:'300 日圓還不到免稅門檻啦（通常要 5000）。'},
+      {jp:'おすすめはなんですか？',zh:'推薦什麼？',why:'都要結帳了才問推薦，來不及囉。'},
+    ]},
+    {jp:'ありがとうございました！またおこしくださいませ！',zh:'謝謝惠顧！歡迎再度光臨！',ch:[
+      {jp:'どうも！',zh:'謝啦！',ok:1},
+      {jp:'ごめんなさい',zh:'對不起',why:'沒做錯事不用道歉喔。'},
+      {jp:'メニューをください',zh:'請給我菜單',why:'便利商店沒有菜單啦！'},
+    ]},
+  ]},
+  {id:'d3',name:'居酒屋閒聊',kind:'talk',npc:{name:'老闆・鬼藏',sprite:'oni'},steps:[
+    {jp:'いらっしゃい！なにをのみますか？',zh:'歡迎！要喝點什麼？',ch:[
+      {jp:'ウーロンちゃをください',zh:'請給我烏龍茶',ok:1},
+      {jp:'えきはどこですか？',zh:'車站在哪？',why:'先點個飲料吧，老闆不是問路處。'},
+      {jp:'チェックインおねがいします',zh:'我要辦入住',why:'這裡是居酒屋，不是旅館！'},
+    ]},
+    {jp:'きょうはあついですね～',zh:'今天真熱啊～',ch:[
+      {jp:'そうですね！',zh:'就是說啊！',ok:1},
+      {jp:'いいえ、ちがいます',zh:'不，你錯了',why:'聊天氣時附和就好，突然反駁氣氛會凍結。日本聊天的靈魂是「そうですね」！'},
+      {jp:'ざんねんです',zh:'真可惜',why:'熱不是什麼可惜的事啦。'},
+    ]},
+    {jp:'おっ、にほんごがじょうずですね！',zh:'哦！你日文說得真好！',ch:[
+      {jp:'いえいえ、まだまだです',zh:'哪裡哪裡，還差得遠',ok:1},
+      {jp:'はい、じょうずです',zh:'對，我很強',why:'太直接了！日本文化裡被稱讚要先謙虛一下。'},
+      {jp:'にほんごがわかりません',zh:'我不會日文',why:'你剛剛就是用日文回的，露餡了！'},
+    ]},
+    {jp:'たいわんのたべものはおいしいですか？',zh:'台灣的食物好吃嗎？',ch:[
+      {jp:'はい！とてもおいしいですよ',zh:'對！非常好吃喔',ok:1},
+      {jp:'まっすぐいってください',zh:'請直走',why:'老闆沒有要去台灣的路上……'},
+      {jp:'おかいけいおねがいします',zh:'請結帳',why:'聊到一半突然結帳，老闆會傷心。'},
+    ]},
+    {jp:'たのしかったよ！またきてくださいね！',zh:'聊得真開心！要再來喔！',ch:[
+      {jp:'はい、ぜひ！おいしかったです',zh:'好，一定！東西很好吃',ok:1},
+      {jp:'ためしてもいいですか？',zh:'可以試穿嗎？',why:'居酒屋沒有東西可以試穿啦！'},
+      {jp:'けいさつをよんでください',zh:'請叫警察',why:'發生什麼事了！？氣氛明明很好啊！'},
+    ]},
+  ]},
+  {id:'d4',name:'路上問路',kind:'talk',npc:{name:'路人狐姊',sprite:'fox'},steps:[
+    {jp:'（你想去神社，要怎麼開口？）',zh:'向路過的狐姊搭話',ch:[
+      {jp:'すみません、じんじゃはどこですか？',zh:'不好意思，請問神社在哪裡？',ok:1},
+      {jp:'おい！じんじゃ！',zh:'喂！神社！',why:'太兇啦！搭話開頭一定要用「すみません」。'},
+      {jp:'じんじゃです',zh:'是神社',why:'只講名詞對方不知道你想幹嘛喔。'},
+    ]},
+    {jp:'じんじゃですか？あそこをまっすぐいって、ひだりですよ',zh:'神社嗎？從那裡直走，然後左轉喔',ch:[
+      {jp:'まっすぐいって、ひだりですね。ありがとうございます！',zh:'直走然後左轉對吧，謝謝！',ok:1},
+      {jp:'みぎですね！',zh:'右轉對吧！',why:'她說的是ひだり（左）！複誦確認前先聽清楚。'},
+      {jp:'いくらですか？',zh:'多少錢？',why:'問路是免費的啦！'},
+    ]},
+    {jp:'あるいて５ふんぐらいですよ',zh:'走路大概 5 分鐘喔',ch:[
+      {jp:'ちかいですね！たすかりました',zh:'很近呢！幫大忙了',ok:1},
+      {jp:'タクシーをよんでください',zh:'請幫我叫計程車',why:'走路 5 分鐘就到，搭計程車太誇張！'},
+      {jp:'きぶんがわるいです',zh:'我不舒服',why:'咦，突然身體不適嗎？問路問到一半……'},
+    ]},
+    {jp:'きをつけていってらっしゃい！',zh:'路上小心，慢走！',ch:[
+      {jp:'ありがとうございました！',zh:'非常感謝！',ok:1},
+      {jp:'いらっしゃいませ',zh:'歡迎光臨',why:'那是店員說的話，你不是店員！'},
+      {jp:'おやすみなさい',zh:'晚安（睡前）',why:'大白天的說什麼晚安！'},
+    ]},
+  ]},
+]},
+{id:'r9',icon:'oni',name:'歡樂祭典',desc:'有趣主題挑戰：美食、戀愛、動漫、冷笑話',chapters:[
+  vocabCh('f1','美食祭・料理篇','拉麵史萊姆','slime',[
+    vh('ラーメン','','拉麵','片假名料理代表，深夜的誘惑。'),
+    vh('すし','寿司','壽司','世界共通語，但發音是すし不是 sushi～。'),
+    vh('うどん','','烏龍麵','讚岐うどん最有名。'),
+    vh('カレー','','咖哩','日本國民美食，カレーライス。'),
+    vh('おにぎり','','飯糰','便利商店冒險者的補給品。'),
+    vh('みそしる','味噌汁','味噌湯','日式定食的固定班底。'),
+    vh('やきとり','焼き鳥','烤雞串','居酒屋必點。'),
+    vh('てんぷら','天ぷら','天婦羅','炸蝦天婦羅＝えびてん。'),
+  ]),
+  vocabCh('f2','美食祭・甜點篇','抹茶貓貓','cat',[
+    vh('たこやき','たこ焼き','章魚燒','大阪的靈魂食物。'),
+    vh('おこのみやき','お好み焼き','大阪燒','「隨你喜歡」燒，配料自由。'),
+    vh('だんご','団子','糰子','花より団子＝賞花不如吃糰子。'),
+    vh('まっちゃ','抹茶','抹茶','京都伴手禮之王。'),
+    vh('ケーキ','','蛋糕','生日必備，ショートケーキ＝草莓蛋糕。'),
+    vh('アイス','','冰淇淋','アイスクリーム的簡稱。'),
+    vh('コーヒー','','咖啡','唸長音 ko-o-hi-i，不是 coffee。'),
+    vh('ジュース','','果汁','日本的ジュース泛指含糖飲料。'),
+  ]),
+  vocabCh('f3','旅遊景點篇','導遊小鳥','bird',[
+    vh('じんじゃ','神社','神社','鳥居⛩️所在地，參拜前先洗手。'),
+    vh('おてら','お寺','寺廟','神社是神道教，寺廟是佛教。'),
+    vh('おんせん','温泉','溫泉','日本旅遊的精髓，泡完喝牛奶。'),
+    vh('おしろ','お城','城堡','大阪城、姫路城的「城」。'),
+    vh('こうえん','公園','公園','上野こうえん賞櫻名所。'),
+    vh('ゆうえんち','遊園地','遊樂園','日文的「遊園地」＝遊樂園。'),
+    vh('びじゅつかん','美術館','美術館','安靜地欣賞名畫的地方。'),
+    vh('どうぶつえん','動物園','動物園','どうぶつ（動物）＋えん（園）。'),
+  ]),
+  vocabCh('f4','日本文化篇','狐面舞者','fox',[
+    vh('きもの','着物','和服','き（穿）＋もの（東西）＝穿的東西。'),
+    vh('さくら','桜','櫻花','三月底的粉紅色浪漫。'),
+    vh('はなび','花火','煙火','夏日祭典壓軸，はな（花）＋び（火）。'),
+    vh('まつり','祭り','祭典','夏天到處都是おまつり。'),
+    vh('さどう','茶道','茶道','一期一會的精神。'),
+    vh('おみやげ','お土産','伴手禮','旅行回來的社交貨幣。'),
+    vh('おみくじ','','神籤','抽到凶就綁在神社樹上化解。'),
+    vh('たたみ','畳','榻榻米','和室的地板，有草香。'),
+  ]),
+  phraseCh('f5','自我介紹篇','害羞史萊姆','slime',[
+    {jp:'わたしはゆうです',ro:'wa·ta·shi·wa·yu·u·de·su',zh:'我是小勇',memo:'把ゆう換成自己的名字就是萬用句型。'},
+    {jp:'たいわんじんです',ro:'ta·i·wa·n·ji·n·de·su',zh:'我是台灣人',memo:'國家＋じん＝〇〇人。'},
+    {jp:'がくせいです',ro:'ga·ku·se·i·de·su',zh:'我是學生',memo:'職業直接＋です就能自我介紹。'},
+    {jp:'しゅみはアニメです',ro:'shu·mi·wa·a·ni·me·de·su',zh:'興趣是看動畫',memo:'しゅみ（趣味）＝興趣，交朋友起手式。'},
+    {jp:'にほんごをべんきょうしています',ro:'ni·ho·n·go·o·be·n·kyo·u',zh:'我正在學日文',memo:'說完這句日本人會秒稱讚你。'},
+    {jp:'よろしくおねがいします',ro:'yo·ro·shi·ku·o·ne·ga·i',zh:'請多指教',memo:'自我介紹的標準收尾。'},
+  ]),
+  vocabCh('f6','職業篇','工作貓貓','cat',[
+    vh('かいしゃいん','会社員','上班族','かいしゃ（公司）＋いん（員）。'),
+    vh('がくせい','学生','學生','だいがくせい＝大學生。'),
+    vh('いしゃ','医者','醫生','稱呼醫生時說おいしゃさん。'),
+    vh('かんごし','看護師','護理師','白衣天使。'),
+    vh('てんいん','店員','店員','てんいんさん～＝呼喚店員用。'),
+    vh('エンジニア','','工程師','片假名職業代表。'),
+    vh('まんがか','漫画家','漫畫家','日本小學生的夢幻職業。'),
+    vh('ゆうしゃ','勇者','勇者','你現在的職業！'),
+  ]),
+  vocabCh('f7','私生活篇','宅宅幽靈','ghost',[
+    vh('ひとりぐらし','一人暮らし','一個人住','自由與泡麵的生活。'),
+    vh('ペット','','寵物','日本養貓派 vs 養狗派之爭。'),
+    vh('しゅみ','趣味','興趣','日文的「趣味」是興趣嗜好。'),
+    vh('やすみのひ','休みの日','休假日','人生的意義所在。'),
+    vh('ゲーム','','電玩','ゲームをする＝打電動。'),
+    vh('りょうり','料理','做菜','りょうりができる人＝加分。'),
+    vh('そうじ','掃除','打掃','大掃除＝おおそうじ。'),
+    vh('せんたく','洗濯','洗衣服','跟せんたく（選擇）同音，曬衣服請選好天氣。'),
+  ]),
+  vocabCh('f8','戀愛單字篇','心動狐狸','fox',[
+    vh('すき','好き','喜歡','日文告白就靠這兩個字。'),
+    vh('だいすき','大好き','最喜歡','だい（大）＋すき＝加強版。'),
+    vh('こい','恋','戀','こいをする＝談戀愛。'),
+    vh('あい','愛','愛','こい是心動，あい是深愛。'),
+    vh('かれし','彼氏','男朋友','かれ也可以指「他」。'),
+    vh('かのじょ','彼女','女朋友','也是「她」，看語境。'),
+    vh('デート','','約會','デートにさそう＝約人出去。'),
+    vh('こくはく','告白','告白','日本文化：關係要靠こくはく確定。'),
+    vh('はつこい','初恋','初戀','はつ（初）＋こい（戀）。'),
+    vh('しつれん','失恋','失戀','吃甜點治癒的日子。'),
+  ]),
+  phraseCh('f9','告白台詞篇','花嫁史萊姆','slime',[
+    {jp:'すきです',ro:'su·ki·de·su',zh:'我喜歡你',memo:'最直球的告白，簡單最強。'},
+    {jp:'つきあってください',ro:'tsu·ki·a·t·te·ku·da·sa·i',zh:'請跟我交往',memo:'告白標準句，說完鞠躬。'},
+    {jp:'ずっといっしょにいたい',ro:'zu·t·to·i·s·sho·ni·i·ta·i',zh:'想一直和你在一起',memo:'ずっと（一直）＋いっしょ（一起）。'},
+    {jp:'きみのえがおがすき',ro:'ki·mi·no·e·ga·o·ga·su·ki',zh:'喜歡你的笑容',memo:'えがお（笑顏）＝笑容。'},
+    {jp:'つきがきれいですね',ro:'tsu·ki·ga·ki·re·i·de·su·ne',zh:'月色真美（＝我愛你）',memo:'夏目漱石流：日本人含蓄告白的最高境界。'},
+    {jp:'しあわせにするよ',ro:'shi·a·wa·se·ni·su·ru·yo',zh:'我會讓你幸福',memo:'しあわせ（幸せ）＝幸福，求婚等級台詞。'},
+  ]),
+  vocabCh('f10','動漫用語篇','聖劍小鳥','bird',[
+    vh('なかま','仲間','夥伴','熱血動漫的核心價值。'),
+    vh('まほう','魔法','魔法','まほうしょうじょ＝魔法少女。'),
+    vh('ぼうけん','冒険','冒險','你正在做的事。'),
+    vh('ひっさつわざ','必殺技','必殺技','大喊招式名是禮貌。'),
+    vh('しゅじんこう','主人公','主角','しゅじんこうは死なない（大概）。'),
+    vh('せいゆう','声優','聲優','日本的配音員是明星等級。'),
+    vh('へんしん','変身','變身','へんしん！（腰帶音效）'),
+    vh('おたく','','御宅族','現在是專業愛好者的稱號。'),
+  ]),
+  phraseCh('f11','冷笑話祭','諧音赤鬼','oni',[
+    {jp:'ふとんがふっとんだ',ro:'fu·to·n·ga·fu·t·to·n·da',zh:'棉被飛走了',memo:'ふとん（棉被）×ふっとんだ（飛走）。日本冷笑話之王，說完會被瞪。'},
+    {jp:'イルカはいるか？',ro:'i·ru·ka·wa·i·ru·ka',zh:'有海豚嗎？',memo:'イルカ（海豚）×いるか（在嗎）。水族館限定梗。'},
+    {jp:'スイカはやすいか？',ro:'su·i·ka·wa·ya·su·i·ka',zh:'西瓜便宜嗎？',memo:'スイカ（西瓜）×やすいか（便宜嗎）。菜市場實戰可用。'},
+    {jp:'ねこがねころんだ',ro:'ne·ko·ga·ne·ko·ro·n·da',zh:'貓咪躺下了',memo:'ねこ（貓）×ねころんだ（躺下）。畫面可愛加分。'},
+    {jp:'アルミかんのうえにあるみかん',ro:'a·ru·mi·ka·n·no·u·e·ni·a·ru·mi·ka·n',zh:'鋁罐上面的橘子',memo:'アルミかん（鋁罐）×あるみかん（有的橘子）完美迴文級同音。'},
+    {jp:'でんわにでんわ',ro:'de·n·wa·ni·de·n·wa',zh:'電話沒人接',memo:'でんわ（電話）×でんわ（出んわ＝不接啦）。關西腔梗。'},
+    {jp:'トイレにいっといれ',ro:'to·i·re·ni·i·t·to·i·re',zh:'去上個廁所吧',memo:'トイレ（廁所）×いっといで（去吧）。長輩最愛。'},
+    {jp:'にわにはにわにわとりがいる',ro:'ni·wa·ni·wa·ni·wa·ni·wa·to·ri·ga·i·ru',zh:'院子裡有兩隻雞',memo:'にわ（庭院）×にわ（二羽）×にわとり（雞），繞口令等級，唸對就是大師。'},
+  ]),
+]},
+{id:'r4',icon:'slime',name:'N5 草原',desc:'最基礎的生活單字，冒險正式開始',chapters:[
+  vocabCh('n5num','數字篇','算數史萊姆','slime',[
+    vh('いち','一','1','いちばん＝第一名！'),
+    vh('に','二','2','跟中文的「二」發音有點像。'),
+    vh('さん','三','3','さん也用在稱呼：ユウさん。'),
+    vh('よん','四','4','也唸し，但し＝死，日本人避諱。'),
+    vh('ご','五','5','ごはん的ご不是 5 喔，別搞混。'),
+    vh('ろく','六','6','ろくろく唸兩次很順口。'),
+    vh('なな','七','7','也唸しち，報電話號碼多用なな。'),
+    vh('はち','八','8','はちみつ（蜂蜜）的はち是蜜蜂！'),
+    vh('きゅう','九','9','也唸く，きゅう比較常用。'),
+    vh('じゅう','十','10','11 就是じゅういち，直接疊！'),
+    vh('ひゃく','百','100','さんびゃく（300）會變音，先記ひゃく。'),
+    vh('せん','千','1000','日圓常用：せんえん＝1000 円。'),
+  ]),
+  vocabCh('n5a','時間篇','N5 史萊姆長老','slime',[
+    vh('いま','今','現在','「いま、なんじ？」＝現在幾點？'),
+    vh('きょう','今日','今天','きょ＋う，拗音出場！'),
+    vh('あした','明日','明天','明天再說＝あしたでいい。'),
+    vh('きのう','昨日','昨天','過去的事都推給きのう。'),
+    vh('あさ','朝','早上','あさごはん＝早餐。'),
+    vh('よる','夜','晚上','夜市的「夜」。'),
+    vh('じかん','時間','時間','じかんがない！＝沒時間了！'),
+    vh('はん','半','～點半','「３じはん」＝三點半。'),
+  ]),
+  vocabCh('n5b','生活名詞篇','草原野貓','cat',[
+    vh('みず','水','水','跟店員說「おみず」更有禮貌。'),
+    vh('ごはん','ご飯','飯／一餐','既是白飯，也是「吃飯」的飯。'),
+    vh('いえ','家','家','いえにかえる＝回家。'),
+    vh('がっこう','学校','學校','がっ的促音要頓一下。'),
+    vh('ともだち','友達','朋友','とも（共同）＋だち（夥伴們）。'),
+    vh('せんせい','先生','老師','日文的「先生」是老師，不是先生！'),
+    vh('ほん','本','書','日文的「本」是書本的意思。'),
+    vh('くるま','車','車子','輪子 kuru-kuru 轉的聲音。'),
+  ]),
+  vocabCh('n5c','動詞篇','蹦跳小鳥','bird',[
+    vh('たべる','食べる','吃','いただきます之後就開始たべる。'),
+    vh('のむ','飲む','喝','日文連吃藥都用のむ！'),
+    vh('いく','行く','去','いってきます＝我出門了。'),
+    vh('くる','来る','來','日文最調皮的不規則動詞。'),
+    vh('みる','見る','看','アニメをみる＝看動畫。'),
+    vh('きく','聞く','聽／問','聽音樂和問問題都是きく。'),
+    vh('かう','買う','買','かいもの（購物）的かう。'),
+    vh('ねる','寝る','睡覺','おやすみなさい之後就ねる。'),
+  ]),
+  vocabCh('n5d','形容詞篇','彩色史萊姆','slime',[
+    vh('おおきい','大きい','大的','張大嘴巴唸 oo-ki-i。'),
+    vh('ちいさい','小さい','小的','小小聲唸就對了。'),
+    vh('たかい','高い','高的／貴的','山很高、東西很貴，都是たかい！'),
+    vh('やすい','安い','便宜的','看到「激安」＝超便宜，衝！'),
+    vh('おいしい','美味しい','好吃的','旅遊使用率最高的形容詞。'),
+    vh('たのしい','楽しい','開心的','玩這個遊戲的感覺（希望）。'),
+    vh('あたらしい','新しい','新的','新商品＝しんしょうひん。'),
+    vh('さむい','寒い','冷的（天氣）','天氣冷用さむい，飲料冰是つめたい。'),
+  ]),
+  vocabCh('n5e','家族篇','家族貓貓','cat',[
+    vh('ちち','父','（我）爸爸','跟別人提自己爸爸時用ちち。'),
+    vh('はは','母','（我）媽媽','對外謙稱自己媽媽。'),
+    vh('おとうさん','お父さん','爸爸（稱呼）','當面叫爸爸、或稱別人的爸爸。'),
+    vh('おかあさん','お母さん','媽媽（稱呼）','全世界嬰兒的第一個單字候補。'),
+    vh('あに','兄','（我）哥哥','稱別人的哥哥是おにいさん。'),
+    vh('あね','姉','（我）姊姊','稱別人的姊姊是おねえさん。'),
+    vh('おとうと','弟','弟弟','重音在後，跟おとうさん不同。'),
+    vh('いもうと','妹','妹妹','いも不是芋頭喔。'),
+  ]),
+  vocabCh('n5f','食物篇','貪吃小鳥','bird',[
+    vh('パン','','麵包','外來語，用片假名寫成パン。'),
+    vh('たまご','卵','蛋','たまごかけごはん＝生蛋拌飯！'),
+    vh('にく','肉','肉','やきにく＝燒肉，晚餐有著落了。'),
+    vh('さかな','魚','魚','居酒屋菜單常客。'),
+    vh('やさい','野菜','蔬菜','日文的「野菜」就是蔬菜。'),
+    vh('くだもの','果物','水果','日本水果貴但超好吃。'),
+    vh('おちゃ','お茶','茶','加お更有禮貌。'),
+    vh('ぎゅうにゅう','牛乳','牛奶','ぎゅう（牛）＋にゅう（乳）。'),
+  ]),
+  vocabCh('n5g','身體與顏色篇','彩虹史萊姆','slime',[
+    vh('あたま','頭','頭','あたまがいい＝聰明。'),
+    vh('め','目','眼睛','假名め源自「女」，單字め是眼睛。'),
+    vh('みみ','耳','耳朵','兩個み並排像兩隻耳朵。'),
+    vh('て','手','手','假名て的字源就是手！'),
+    vh('あし','足','腳／腿','あしがはやい＝跑得快。'),
+    vh('あか','赤','紅色','あかちゃん＝小嬰兒（紅通通）。'),
+    vh('あお','青','藍色','日本的綠燈也叫あお！'),
+    vh('しろ','白','白色','しろくま＝北極熊。'),
+  ]),
+]},
+{id:'r5',icon:'fox',name:'N4 街道',desc:'走進城市，單字跟著生活場景長大',chapters:[
+  vocabCh('n4a','動詞進階篇','街道狐狸','fox',[
+    vh('おくる','送る','寄送／送行','寄包裹、送朋友回家都用它。'),
+    vh('つかう','使う','使用','スマホをつかう＝用手機。'),
+    vh('はしる','走る','跑','注意！日文的「走」是跑！'),
+    vh('およぐ','泳ぐ','游泳','夏天的動詞。'),
+    vh('まつ','待つ','等待','ちょっとまって！＝等一下！'),
+    vh('わすれる','忘れる','忘記','かさをわすれた＝忘了帶傘。'),
+    vh('おぼえる','覚える','記住','玩這個遊戲的目的。'),
+    vh('かえす','返す','歸還','借了要かえす，做人基本。'),
+  ]),
+  vocabCh('n4b','城市生活篇','都會貓貓','cat',[
+    vh('てんき','天気','天氣','てんきがいい＝天氣好。'),
+    vh('えき','駅','車站','日本旅遊最常看到的漢字之一。'),
+    vh('びょういん','病院','醫院','びょ要唸成一拍。'),
+    vh('ぎんこう','銀行','銀行','領錢的地方。'),
+    vh('しごと','仕事','工作','しごとにいきたくない……'),
+    vh('やすみ','休み','休假','ひるやすみ＝午休，最棒的詞。'),
+    vh('りょこう','旅行','旅行','你玩這個遊戲的理由！'),
+    vh('かいもの','買い物','購物','かいものにいく＝去買東西。'),
+  ]),
+  vocabCh('n4c','心情形容篇','多愁幽靈','ghost',[
+    vh('うれしい','嬉しい','高興的','拿到寶箱時的心情。'),
+    vh('かなしい','悲しい','難過的','戰敗時的心情。'),
+    vh('ねむい','眠い','想睡的','上課下午三點的狀態。'),
+    vh('いそがしい','忙しい','忙碌的','大人的口頭禪。'),
+    vh('しずか','静か','安靜的','圖書館請保持しずか。'),
+    vh('にぎやか','賑やか','熱鬧的','夜市的氣氛。'),
+    vh('べんり','便利','方便的','便利商店的「便利」！'),
+    vh('たいへん','大変','糟糕／辛苦','日本人一天要說十次的詞。'),
+  ]),
+  vocabCh('n4d','學校與工作篇','上班貓貓','cat',[
+    vh('じゅぎょう','授業','上課','じゅぎょうちゅう＝上課中。'),
+    vh('しゅくだい','宿題','作業','小學生的宿敵。'),
+    vh('しけん','試験','考試','JLPT 也是一種しけん！'),
+    vh('かいぎ','会議','會議','かいぎしつ＝會議室。'),
+    vh('きゅうりょう','給料','薪水','きゅうりょうび＝發薪日，最棒的日子。'),
+    vh('れんしゅう','練習','練習','每天打一場，就是れんしゅう。'),
+    vh('しっぱい','失敗','失敗','しっぱいはせいこうのもと＝失敗為成功之母。'),
+    vh('せいこう','成功','成功','打倒魔王＝せいこう！'),
+  ]),
+  vocabCh('n4e','副詞篇','風之狐狸','fox',[
+    vh('いつも','','總是','いつもありがとう＝一直以來謝謝你。'),
+    vh('ときどき','時々','有時','天氣預報常見：くもりときどきあめ。'),
+    vh('たいてい','','通常','たいていだいじょうぶ。'),
+    vh('ぜんぜん','全然','完全（不）','後面通常接否定：ぜんぜんわからない。'),
+    vh('きっと','','一定','きっとできる！'),
+    vh('たぶん','多分','大概','日本人最愛的模糊說法。'),
+    vh('やっと','','終於','やっとおわった＝終於結束了。'),
+    vh('まだ','','還（沒）','まだまだです＝還差得遠。'),
+  ]),
+  vocabCh('n4f','自然與天氣篇','雨天幽靈','ghost',[
+    vh('あめ','雨','雨','あめがふる＝下雨。'),
+    vh('ゆき','雪','雪','ゆきまつり＝北海道雪祭。'),
+    vh('かぜ','風','風／感冒','かぜをひく＝感冒了，超常用！'),
+    vh('そら','空','天空','日文的「空」是天空。'),
+    vh('うみ','海','海','夏天就是要去うみ。'),
+    vh('やま','山','山','富士山正確唸法是ふじさん。'),
+    vh('はな','花','花','はなみ＝賞花，跟鼻子同音！'),
+    vh('つき','月','月亮','「月がきれいですね」＝著名的告白暗語。'),
+  ]),
+]},
+{id:'r6',icon:'ghost',name:'N3 港町',desc:'漢字詞登場，開始像個大人了',chapters:[
+  vocabCh('n3a','社會生活篇','港町幽靈','ghost',[
+    vk('約束','やくそく','約定','跟朋友的約、拉勾的承諾都是它。'),
+    vk('経験','けいけん','經驗','RPG 的 EXP 就是経験値！'),
+    vk('準備','じゅんび','準備','じゅんびOK？'),
+    vk('予定','よてい','預定計畫','明天的よてい是什麼？'),
+    vk('連絡','れんらく','聯絡','れんらくして＝跟我聯絡。'),
+    vk('相談','そうだん','商量','有煩惱就找人そうだん。'),
+    vk('説明','せつめい','說明','せつめいしょ＝說明書。'),
+    vk('遅刻','ちこく','遲到','日本社會的大忌！'),
+  ]),
+  vocabCh('n3b','動詞篇','碼頭赤鬼','oni',[
+    vk('決める','きめる','決定','きめた！＝我決定了！'),
+    vk('続ける','つづける','繼續','學日文最重要的動詞。'),
+    vk('調べる','しらべる','查詢','不會的字就しらべる。'),
+    vk('増える','ふえる','增加','單字量ふえる中！'),
+    vk('減る','へる','減少','おなかがへった＝肚子餓了。'),
+    vk('慣れる','なれる','習慣','漢字看久就なれる了。'),
+    vk('届く','とどく','送達','包裹とどいた！'),
+    vk('迎える','むかえる','迎接','えきまでむかえにいく＝去車站接人。'),
+  ]),
+  vocabCh('n3c','心情狀態篇','人魚貓貓','cat',[
+    vk('残念','ざんねん','可惜','ざんねんでした～（遊戲答錯音）。'),
+    vk('安心','あんしん','安心','あんしんして＝放心吧。'),
+    vk('心配','しんぱい','擔心','媽媽的專用詞。'),
+    vk('得意','とくい','擅長','とくいわざ＝拿手絕活。'),
+    vk('苦手','にがて','不擅長','漢字がにがて？打完這章就不會了。'),
+    vk('必要','ひつよう','必要','ひつようない＝不需要。'),
+    vk('無理','むり','辦不到','むりむりむり！（拒絕三連）。'),
+    vk('大事','だいじ','重要','だいじなこと＝重要的事。'),
+  ]),
+  vocabCh('n3d','人際關係篇','社交狐狸','fox',[
+    vk('関係','かんけい','關係','かんけいない＝跟我無關。'),
+    vk('挨拶','あいさつ','打招呼','日本社會的潤滑劑。'),
+    vk('我慢','がまん','忍耐','がまんして＝忍一下。'),
+    vk('遠慮','えんりょ','客氣／謝絕','えんりょなく＝那我就不客氣了。'),
+    vk('迷惑','めいわく','困擾','めいわくをかける＝給人添麻煩。'),
+    vk('感謝','かんしゃ','感謝','比ありがとう更書面的說法。'),
+    vk('文句','もんく','抱怨','もんくがある？＝有意見嗎？'),
+    vk('冗談','じょうだん','玩笑','じょうだんでしょう？＝開玩笑的吧？'),
+  ]),
+  vocabCh('n3e','副詞篇','疾風小鳥','bird',[
+    vh('やっぱり','','果然','日劇口頭禪 Top 3。'),
+    vk('特に','とくに','特別是','とくにない＝沒有特別的。'),
+    vk('例えば','たとえば','例如','舉例之前先說這句。'),
+    vk('最近','さいきん','最近','さいきんどう？＝最近如何？'),
+    vk('結構','けっこう','相當／不用了','けっこうです有兩種意思，小心！'),
+    vk('絶対','ぜったい','絕對','ぜったいかつ＝絕對要贏！'),
+    vh('なるべく','','盡量','なるべくはやく＝盡量快。'),
+    vh('そろそろ','','差不多該','そろそろいきましょう＝差不多該走了。'),
+  ]),
+  vocabCh('n3f','生活動詞篇','勤勞赤鬼','oni',[
+    vk('片付ける','かたづける','收拾','へやをかたづける＝整理房間。'),
+    vk('手伝う','てつだう','幫忙','てつだいましょうか？＝要我幫忙嗎？'),
+    vk('借りる','かりる','借入','跟別人借東西。'),
+    vk('貸す','かす','借出','借給別人。方向別搞反！'),
+    vk('誘う','さそう','邀請','ごはんにさそう＝約吃飯。'),
+    vk('断る','ことわる','拒絕','有禮貌地ことわる也是一門技術。'),
+    vk('謝る','あやまる','道歉','跟あやしい（可疑）長得像但無關。'),
+    vk('褒める','ほめる','稱讚','ほめられてのびるタイプ＝被稱讚就進步的類型。'),
+  ]),
+]},
+{id:'r7',icon:'oni',name:'N2 雪山',desc:'書面語的世界，寒氣逼人',chapters:[
+  vocabCh('n2a','抽象名詞篇','雪山赤鬼','oni',[
+    vk('影響','えいきょう','影響','えいきょうをうける＝受到影響。'),
+    vk('環境','かんきょう','環境','環保議題必備詞。'),
+    vk('状況','じょうきょう','狀況','じょうきょうは？＝現在情況如何？'),
+    vk('印象','いんしょう','印象','だいいちいんしょう＝第一印象。'),
+    vk('態度','たいど','態度','たいどがわるい＝態度差。'),
+    vk('課題','かだい','課題／作業','大學生的惡夢。'),
+    vk('傾向','けいこう','傾向','N2 考題超愛出的詞。'),
+    vk('対策','たいさく','對策','しけんたいさく＝考試對策。'),
+  ]),
+  vocabCh('n2b','動詞副詞篇','吹雪幽靈','ghost',[
+    vk('検討する','けんとうする','研議／考慮','日本上班族的「再研究看看」。'),
+    vk('実施する','じっしする','實施','公告文的常客。'),
+    vk('把握する','はあくする','掌握','じょうきょうをはあく＝掌握狀況。'),
+    vk('相当','そうとう','相當','そうとうつよい＝相當強。'),
+    vk('意外に','いがいに','意外地','いがいにかんたん＝意外地簡單。'),
+    vk('常に','つねに','總是','つねにれいせい＝隨時保持冷靜。'),
+    vk('単に','たんに','僅僅是','たんにうんがいい＝只是運氣好。'),
+    vk('逆に','ぎゃくに','反而','ぎゃくにいい！＝反而更好！'),
+  ]),
+  vocabCh('n2c','動詞篇','冰岩赤鬼','oni',[
+    vk('応じる','おうじる','因應／回應','じょうきょうにおうじて＝視情況而定。'),
+    vk('補う','おぎなう','彌補','弱點就用練習おぎなう。'),
+    vk('費やす','ついやす','耗費','じかんをついやす＝花費時間。'),
+    vk('損なう','そこなう','損害','けんこうをそこなう＝有害健康。'),
+    vk('促す','うながす','促使','ちゅういをうながす＝提醒注意。'),
+    vk('妨げる','さまたげる','妨礙','すいみんをさまたげる＝妨礙睡眠。'),
+    vk('図る','はかる','謀求','かいぜんをはかる＝謀求改善。'),
+    vk('占める','しめる','佔據','はんぶんをしめる＝佔一半。'),
+  ]),
+  vocabCh('n2d','形容詞篇','吹雪貓貓','cat',[
+    vk('著しい','いちじるしい','顯著的','せいちょうがいちじるしい＝成長顯著。'),
+    vk('乏しい','とぼしい','缺乏的','けいけんがとぼしい＝經驗不足。'),
+    vk('激しい','はげしい','激烈的','はげしいあめ＝大雨。'),
+    vk('詳しい','くわしい','詳細的／熟悉的','にほんごにくわしいひと。'),
+    vk('険しい','けわしい','險峻的','けわしいやまみち＝險峻山路。'),
+    vk('賢い','かしこい','聰明的','かしこいせんたく＝聰明的選擇。'),
+    vk('鈍い','にぶい','遲鈍的','はんのうがにぶい＝反應慢。'),
+    vk('幼い','おさない','年幼的','おさないころ＝小時候。'),
+  ]),
+  vocabCh('n2e','慣用表現篇','拳法幽靈','ghost',[
+    vk('気になる','きになる','在意','喜歡的人就是會きになる……'),
+    vk('気をつける','きをつける','小心','きをつけて！＝路上小心！'),
+    vk('手に入れる','てにいれる','取得','しんぶきをてにいれた！＝獲得新武器！'),
+    vk('目立つ','めだつ','顯眼','めだちたくない＝不想引人注目。'),
+    vk('腹が立つ','はらがたつ','生氣','肚子站起來＝火大。'),
+    vk('間に合う','まにあう','來得及','しゅうでんにまにあった！＝趕上末班車！'),
+    vk('役に立つ','やくにたつ','有用','このゲーム、やくにたつ！'),
+    vk('身につける','みにつける','掌握（技能）','にほんごをみにつける。'),
+  ]),
+]},
+{id:'r8',icon:'dragon',name:'N1 魔王城',desc:'最終決戰！連日本人都會查字典的詞',chapters:[
+  vocabCh('n1a','魔王語彙篇・壹','門番龍','dragon',[
+    vk('曖昧','あいまい','含糊曖昧','あいまいなへんじ＝含糊的回答。'),
+    vk('顕著','けんちょ','顯著','論文最愛用的詞。'),
+    vk('妥協','だきょう','妥協','だきょうしない＝絕不妥協。'),
+    vk('葛藤','かっとう','糾結／內心衝突','要不要吃宵夜的かっとう。'),
+    vk('貢献','こうけん','貢獻','チームにこうけんする。'),
+    vk('洞察','どうさつ','洞察','どうさつりょく＝洞察力。'),
+    vk('憂鬱','ゆううつ','憂鬱','漢字比心情更讓人ゆううつ。'),
+    vk('醍醐味','だいごみ','精髓／妙趣','りょこうのだいごみ＝旅行的醍醐味！'),
+  ]),
+  vocabCh('n1b','魔王語彙篇・貳','魔王・日語龍神','dragon',[
+    vk('潔い','いさぎよい','乾脆／光明磊落','認輸認得漂亮就是いさぎよい。'),
+    vk('紛らわしい','まぎらわしい','容易混淆的','シ和ツ就很まぎらわしい！'),
+    vk('煩わしい','わずらわしい','繁瑣煩人的','手續一堆＝てつづきがわずらわしい。'),
+    vk('夥しい','おびただしい','大量的','おびただしいかず＝驚人的數量。'),
+    vk('案の定','あんのじょう','果然不出所料','あんのじょう、まけた。'),
+    vk('極めて','きわめて','極其','きわめてじゅうよう＝極為重要。'),
+    vk('未だに','いまだに','至今仍','いまだにわからない……'),
+    vk('敢えて','あえて','特意／偏要','あえてむずかしいみちをいく。'),
+  ]),
+  vocabCh('n1c','魔王語彙篇・參','親衛龍','dragon',[
+    vk('示唆','しさ','暗示','けっかがしさするもの＝結果所暗示的。'),
+    vk('顧みる','かえりみる','回顧／反省','じぶんをかえりみる。'),
+    vk('携わる','たずさわる','從事','きょういくにたずさわる＝從事教育。'),
+    vk('蔑ろ','ないがしろ','輕忽','きほんをないがしろにしない。'),
+    vk('台無し','だいなし','泡湯／糟蹋','あめでけいかくがだいなし。'),
+    vk('目処','めど','頭緒／眉目','めどがたつ＝有眉目了。'),
+    vk('節目','ふしめ','轉折點','じんせいのふしめ＝人生的轉捩點。'),
+    vk('腕前','うでまえ','本領','りょうりのうでまえ＝廚藝。'),
+  ]),
+  vocabCh('n1d','魔王副詞篇','龍神近衛','dragon',[
+    vk('予め','あらかじめ','事先','あらかじめよやくする＝事先預約。'),
+    vk('甚だ','はなはだ','非常（書面）','はなはだいかん＝甚感遺憾。'),
+    vk('一概に','いちがいに','一概','いちがいにはいえない＝不能一概而論。'),
+    vk('悉く','ことごとく','全都','よそうがことごとくはずれた。'),
+    vk('辛うじて','かろうじて','勉強地','かろうじてまにあった＝勉強趕上。'),
+    vk('頻りに','しきりに','頻繁地','しきりにうなずく＝頻頻點頭。'),
+    vk('強いて','しいて','硬要說','しいていえば＝硬要說的話。'),
+    vk('何卒','なにとぞ','懇請（書面）','商業書信結尾的常客。'),
+  ]),
+]},
+];
+
+const WEAPONS=[[1,'見習木劍'],[3,'五十音木劍'],[6,'濁音鐵劍'],[10,'拗音聖劍'],[15,'旅人快劍'],[20,'漢字大太刀'],[27,'魔王討伐聖劍']];
+const TITLES=[[1,'見習勇者'],[3,'假名學徒'],[6,'五十音劍士'],[10,'N5 冒險者'],[15,'N4 旅人'],[20,'N3 劍豪'],[24,'N2 賢者'],[30,'N1 魔導王']];
+const BUFFS={
+ time:{icon:'⏳',name:'時間祝福',desc:'下一場戰鬥每題 +4 秒'},
+ exp:{icon:'✨',name:'經驗加倍',desc:'下一場戰鬥 EXP ×2'},
+ heart:{icon:'💗',name:'多一顆心',desc:'下一場戰鬥 ♥ +1'},
+};
+
+// 主題魔王：每個區域最後追加一場「總復習」魔王戰。
+// 出題池＝該區全部內容，必須先通關區內所有章節才解鎖；打贏＝這個主題完整學完。
+REGIONS.forEach(r=>{
+  const norm=r.chapters.filter(c=>c.kind!=='talk');
+  if(!norm.length)return;
+  const pool=[];
+  norm.forEach(c=>pool.push.apply(pool,c.items));
+  r.chapters.push({id:r.id+'_boss',name:'主題魔王戰',kind:norm[0].kind,boss:true,
+    monster:{name:'魔王・'+r.name,sprite:'dragon'},items:pool});
+});
+// 索引
+const CHMAP={},REGION_OF={};
+REGIONS.forEach(r=>r.chapters.forEach(c=>{CHMAP[c.id]=c;REGION_OF[c.id]=r.id;}));
+const KANA_ALL=[];
+REGIONS.forEach(r=>r.chapters.forEach(c=>{if(c.kind==='kana'&&!c.boss)c.items.forEach(it=>KANA_ALL.push(it));}));
+
+/* ================= 像素 sprite ================= */
+const PAL={G:'#7ce26a',D:'#2e8f4a',W:'#ffffff',B:'#1a1c2c',P:'#ff9edb',
+ M:'#b07ce8',N:'#8757b2',E:'#e8f7ff',K:'#3a3f5e',
+ S:'#ffd5b0',H:'#8f563b',R:'#e53b44',L:'#29366f',
+ Y:'#ffe066',O:'#ff8f2b'};
+const SPRITES={
+ slime:[
+  '....GGGGGG....',
+  '..GGGGGGGGGG..',
+  '.GGGGGGGGGGGG.',
+  '.GGWWGGGGWWGG.',
+  'GGGWBGGGGWBGGG',
+  'GGGGGGGGGGGGGG',
+  'GGPGGGDDGGGPGG',
+  'GGGGGGGGGGGGGG',
+  '.GGGGGGGGGGGG.',
+  '..GGGGGGGGGG..',
+  '..DDDDDDDDDD..'],
+ cat:[
+  '.M..........M.',
+  '.MM........MM.',
+  '.MMMMMMMMMMMM.',
+  '.MMMMMMMMMMMM.',
+  '.MWBMMMMMMWBM.',
+  '.MMMMMMMMMMMM.',
+  '.MMPMMNNMMPMM.',
+  '.MMMMMMMMMMMM.',
+  '..MMMMMMMMMM..',
+  '..M..M..M..M..'],
+ ghost:[
+  '...EEEEEEEE...',
+  '..EEEEEEEEEE..',
+  '.EEEEEEEEEEEE.',
+  '.EEBBEEEEBBEE.',
+  '.EEBBEEEEBBEE.',
+  '.EEEEEEEEEEEE.',
+  '.EEEEKKKKEEEE.',
+  '.EEEEEEEEEEEE.',
+  '.EEEEEEEEEEEE.',
+  '.EE.EEE.EEE.E.'],
+ bird:[
+  '...YYYYYY...',
+  '..YYYYYYYY..',
+  '.YYBYYYYBYY.',
+  '.YYYYOOYYYY.',
+  '.YYYYYYYYYY.',
+  '..YYYYYYYY..',
+  '.Y.YYYYYY.Y.',
+  '....YYYY....',
+  '....O..O....'],
+ fox:[
+  '.O..........O.',
+  '.OO........OO.',
+  '.OOO......OOO.',
+  '.OOOOOOOOOOOO.',
+  '.OWBOOOOOOWBO.',
+  '.OOOOWWWWOOOO.',
+  '.OOOOOBBOOOOO.',
+  '..OOOOOOOOOO..',
+  '..O..O..O..O..'],
+ oni:[
+  '..W........W..',
+  '..RR......RR..',
+  '..RRRRRRRRRR..',
+  '.RRRRRRRRRRRR.',
+  '.RYBRRRRRRYBR.',
+  '.RRRRRRRRRRRR.',
+  '.RRRWWWWWWRRR.',
+  '.RRRRRRRRRRRR.',
+  '..RRRRRRRRRR..',
+  '..RR..RR..RR..'],
+ dragon:[
+  '..D........D..',
+  '.DDD......DDD.',
+  '.DGGGGGGGGGGD.',
+  '.GGWBGGGGWBGG.',
+  '.GGGGGGGGGGGG.',
+  '.GGGWWWWWWGGG.',
+  '.GGGGGGGGGGGG.',
+  '..GGGGGGGGGG..',
+  '..DD..DD..DD..'],
+ hero:[
+  '...HHHHHH...',
+  '..HHHHHHHH..',
+  '..SSSSSSSS..',
+  '..SBSSSSBS..',
+  '..SSSSSSSS..',
+  '...RRRRRR...',
+  '..RRRRRRRR..',
+  '.SRRRRRRRRS.',
+  '..RRRRRRRR..',
+  '...LL..LL...',
+  '...LL..LL...',
+  '..KK....KK..'],
+};
+function drawSprite(cv,rows,scale){
+  const w=rows[0].length,h=rows.length;
+  cv.width=w;cv.height=h;
+  cv.style.width=(w*scale)+'px';cv.style.height=(h*scale)+'px';
+  const x=cv.getContext('2d');
+  x.clearRect(0,0,w,h);
+  rows.forEach((r,j)=>{for(let i=0;i<r.length;i++){
+    const c=PAL[r[i]];if(c){x.fillStyle=c;x.fillRect(i,j,1,1);}
+  }});
+}
+
+/* ================= 存檔 ================= */
+const KEY='kawaii_quest_save_v1';
+function loadSave(){
+  try{const s=JSON.parse(localStorage.getItem(KEY));
+    if(s&&typeof s.exp==='number')return Object.assign({exp:0,clears:{},nextBuff:null},s);
+  }catch(e){}
+  return{exp:0,clears:{},nextBuff:null};
+}
+let save=loadSave();
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(save));}catch(e){}}
+function resetSave(){
+  if(confirm('確定要刪除所有冒險進度嗎？')){
+    try{localStorage.removeItem(KEY);}catch(e){}
+    save=loadSave();toast('進度已重置，重新出發！');
+  }
+}
+function levelInfo(e){
+  let lv=1,need=100;
+  while(e>=need){e-=need;lv++;need=100+(lv-1)*50;}
+  return{lv,cur:e,need};
+}
+function rankOf(tbl,lv){let r=tbl[0][1];for(const[l,n]of tbl){if(lv>=l)r=n;}return r;}
+
+/* ================= 音效（WebAudio 8-bit） ================= */
+let _ac=null;
+function ac(){
+  if(!_ac){const C=window.AudioContext||window.webkitAudioContext;if(C)_ac=new C();}
+  if(_ac&&_ac.state==='suspended')_ac.resume();
+  return _ac;
+}
+function tone(f,d,delay,type,vol){
+  const c=ac();if(!c)return;
+  const t=c.currentTime+(delay||0);
+  const o=c.createOscillator(),g=c.createGain();
+  o.type=type||'square';o.frequency.value=f;
+  g.gain.setValueAtTime(vol||.1,t);
+  g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(g);g.connect(c.destination);
+  o.start(t);o.stop(t+d);
+}
+const SFX={
+ tap(){tone(660,.06);},
+ flip(){tone(440,.05);tone(660,.05,.06);},
+ ok(){tone(523,.09);tone(659,.09,.08);tone(784,.16,.16);},
+ crit(){tone(659,.07);tone(880,.07,.06);tone(1175,.18,.12);tone(1568,.26,.18,'triangle',.09);},
+ bad(){tone(180,.22,0,'sawtooth',.09);tone(120,.3,.08,'sawtooth',.09);},
+ lvl(){[523,659,784,1047,1319].forEach((f,i)=>tone(f,.12,i*.09));},
+ win(){[392,523,659,784].forEach((f,i)=>tone(f,.12,i*.1));tone(1047,.35,.42);},
+ lose(){[330,262,196,131].forEach((f,i)=>tone(f,.2,i*.15,'triangle'));},
+ spark(){tone(1200+Math.random()*800,.04,0,'triangle',.05);},
+};
+
+/* ================= 日文發音（TTS） ================= */
+function ttsOK(){return 'speechSynthesis' in window;}
+let jaVoice=null;
+function pickVoice(){
+  if(!ttsOK())return;
+  const vs=speechSynthesis.getVoices();
+  jaVoice=vs.find(v=>v.lang&&v.lang.replace('_','-').toLowerCase().startsWith('ja'))||null;
+}
+if(ttsOK()){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}
+function say(txt){
+  if(!ttsOK()||!txt)return;
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(txt);
+    u.lang='ja-JP';if(jaVoice)u.voice=jaVoice;u.rate=.85;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+function sayItem(it){say(it.kana||it.jp);}
+
+/* ================= 小工具 ================= */
+const $=id=>document.getElementById(id);
+function shuffle(a){
+  a=a.slice();
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}
+  return a;
+}
+let toastTimer=null;
+function toast(msg){
+  const t=$('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+function go(id){
+  if(B&&B.timer){clearInterval(B.timer);B.timer=null;}
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id==='scr-'+id));
+  window.scrollTo(0,0);
+}
+let curRegion='r0';
+
+/* ================= 進度與解鎖 ================= */
+function regionProgress(r){
+  let done=0;
+  r.chapters.forEach(c=>{if(save.clears[c.id])done++;});
+  return{done,total:r.chapters.length};
+}
+function regionUnlocked(i){
+  if(i===0)return true;
+  const p=regionProgress(REGIONS[i-1]);
+  return p.done>=Math.ceil(p.total/2);
+}
+function chapterUnlocked(r,idx){
+  const ch=r.chapters[idx];
+  if(ch.boss)return r.chapters.filter(c=>!c.boss).every(c=>save.clears[c.id]);
+  if(idx===0)return true;
+  return !!save.clears[r.chapters[idx-1].id];
+}
+function totalProgress(){
+  let done=0,total=0;
+  REGIONS.forEach(r=>{total+=r.chapters.length;const p=regionProgress(r);done+=p.done;});
+  return{done,total};
+}
+
+/* ================= 標題 / 世界地圖 ================= */
+function startGame(){ac();SFX.ok();go('map');renderMap();}
+function renderMap(){
+  const li=levelInfo(save.exp);
+  const tp=totalProgress();
+  const buf=save.nextBuff?BUFFS[save.nextBuff]:null;
+  $('hud').innerHTML=
+    '<div class="row1">'+
+      '<span class="lv">Lv.'+li.lv+' '+rankOf(TITLES,li.lv)+'</span>'+
+      '<span class="weapon">⚔ '+rankOf(WEAPONS,li.lv)+'</span>'+
+    '</div>'+
+    '<div class="bar"><div class="fill" style="width:'+Math.round(li.cur/li.need*100)+'%"></div></div>'+
+    '<div class="small mono">EXP '+li.cur+' / '+li.need+'（總計 '+save.exp+'）　冒險進度 '+tp.done+' / '+tp.total+' 章</div>'+
+    (buf?'<span class="bufchip">'+buf.icon+' 持有祝福：'+buf.name+'</span>':'');
+  $('regionlist').innerHTML=REGIONS.map((r,i)=>{
+    const ok=regionUnlocked(i);
+    const p=regionProgress(r);
+    const prev=i>0?REGIONS[i-1]:null;
+    const req=prev?Math.ceil(prev.chapters.length/2):0;
+    return '<div class="panel chcard regioncard'+(ok?'':' locked')+'"'+
+      (ok?' onclick="openRegion(\''+r.id+'\')"':'')+'>'+
+      '<canvas class="spr" id="cv-r'+i+'"></canvas>'+
+      '<div class="info">'+
+        '<h3>'+r.name+(p.done===p.total?' <span class="star">★ 全通關</span>':'')+'</h3>'+
+        '<div class="preview">'+r.desc+'</div>'+
+        (ok
+          ?'<div class="rprog"><div class="bar"><div class="fill grn" style="width:'+Math.round(p.done/p.total*100)+'%"></div></div>'+
+           '<div class="small mono">'+p.done+' / '+p.total+' 章</div></div>'
+          :'<div class="small">🔒 通關「'+prev.name+'」'+req+' 章後解鎖</div>')+
+      '</div></div>';
+  }).join('');
+  REGIONS.forEach((r,i)=>drawSprite($('cv-r'+i),SPRITES[r.icon],4));
+}
+function openRegion(rid){
+  const ri=REGIONS.findIndex(r=>r.id===rid);
+  if(!regionUnlocked(ri))return;
+  curRegion=rid;
+  const r=REGIONS[ri];
+  SFX.tap();go('region');
+  $('region-title').textContent=r.name;
+  $('chlist').innerHTML=r.chapters.map((ch,i)=>{
+    const ok=chapterUnlocked(r,i);
+    const star=save.clears[ch.id]?'<span class="star">★</span>':'';
+    let acts='';
+    if(!ok)acts='<span class="small">'+(ch.boss?'🔒 通關本區全部章節後解鎖':'🔒 通過上一章解鎖')+'</span>';
+    else if(ch.kind==='talk')acts='<button class="btn pink" onclick="startTalk(\''+ch.id+'\')">💬 開始對話</button>';
+    else if(ch.boss)acts='<button class="btn gold" onclick="startBattle(\''+ch.id+'\')">👑 挑戰魔王</button>';
+    else{
+      acts='<button class="btn" onclick="startLearn(\''+ch.id+'\')">📖 學習</button>'+
+           '<button class="btn pink" onclick="startBattle(\''+ch.id+'\')">⚔ 戰鬥</button>'+
+           (ch.kind==='kana'?'<button class="btn gold" onclick="startWrite(\''+ch.id+'\')">✍ 寫字</button>':'');
+    }
+    const preview=ch.kind==='talk'
+      ?('與「'+ch.npc.name+'」對話・'+ch.steps.length+' 回合')
+      :(ch.boss
+        ?('總復習畢業考：全區 '+ch.items.length+' 個項目隨機出戰，時限更短！')
+        :ch.items.map(t=>t.jp).join('　'));
+    return '<div class="panel chcard'+(ok?'':' locked')+'">'+
+      '<canvas class="spr" id="cv-ch'+i+'"></canvas>'+
+      '<div class="info">'+
+        '<h3>'+(ch.boss?'👑 ':'')+ch.name+' '+star+'</h3>'+
+        '<div class="preview">'+preview+'</div>'+
+        '<div class="acts">'+acts+'</div>'+
+      '</div></div>';
+  }).join('');
+  r.chapters.forEach((ch,i)=>{
+    const spr=ch.kind==='talk'?ch.npc.sprite:ch.monster.sprite;
+    drawSprite($('cv-ch'+i),SPRITES[spr],4);
+  });
+}
+
+/* ================= 學習模式 ================= */
+let L=null;
+function startLearn(chid){
+  L={ch:CHMAP[chid],i:0};curRegion=REGION_OF[chid];
+  SFX.tap();go('learn');renderLearn();
+}
+function renderLearn(){
+  const ch=L.ch,it=ch.items[L.i];
+  $('learn-title').textContent=ch.name;
+  $('learn-dots').innerHTML=ch.items.map((_,k)=>'<i class="'+(k===L.i?'onn':'')+'"></i>').join('');
+  $('learn-card').classList.remove('flip');
+  $('learn-card').innerHTML=
+    '<div class="cardinner">'+
+      '<div class="cface panel">'+
+        '<div class="bigjp'+(ch.kind==='phrase'?' phrase':'')+'">'+it.jp+'</div>'+
+        (it.sub?'<div class="subkana">'+it.sub+'</div>':'')+
+        (it.ro?'<div class="romaji mono">'+it.ro+'</div>':'')+
+        '<button class="btn" onclick="event.stopPropagation();sayLearn();">🔊 聽發音</button>'+
+      '</div>'+
+      '<div class="cface cback panel">'+
+        '<div class="meaning">'+it.zh+'</div>'+
+        '<div class="memo">'+it.memo+'</div>'+
+        (it.ex?'<div class="exline">例字：'+it.ex+
+          '<button class="btn" style="font-size:12px;padding:4px 8px;" onclick="event.stopPropagation();sayLearnEx();">🔊 唸例字</button></div>':'')+
+      '</div>'+
+    '</div>';
+  $('learn-prev').disabled=(L.i===0);
+  $('learn-next').disabled=(L.i===ch.items.length-1);
+  $('learn-fight').textContent='⚔ 前往挑戰「'+ch.monster.name+'」';
+  $('learn-fight').onclick=()=>startBattle(ch.id);
+  sayItem(it);
+}
+function sayLearn(){sayItem(L.ch.items[L.i]);SFX.tap();}
+function sayLearnEx(){
+  const it=L.ch.items[L.i];
+  if(it.ex)say(it.ex.split('（')[0]);
+}
+function flipCard(){$('learn-card').classList.toggle('flip');SFX.flip();}
+function navLearn(d){
+  const n=L.i+d;
+  if(n<0||n>=L.ch.items.length)return;
+  L.i=n;SFX.tap();renderLearn();
+}
+
+/* ================= 戰鬥 ================= */
+let B=null;
+function startBattle(chid){
+  const ch=CHMAP[chid];curRegion=REGION_OF[chid];
+  const buff=save.nextBuff;
+  save.nextBuff=null;persist();
+  let qs=shuffle(ch.items);
+  if(ch.boss)qs=qs.slice(0,Math.min(12,qs.length)); // 魔王戰：全區隨機抽 12 題
+  B={ch,qs,qi:0,hp:qs.length,maxhp:qs.length,
+     hearts:3+(buff==='heart'?1:0),
+     tlimit:((ch.boss?8:10)+(buff==='time'?4:0))*1000,
+     mul:(buff==='exp'?2:1),exp:0,timer:null,lock:false,buff};
+  SFX.tap();go('battle');
+  $('b-mname').textContent=ch.monster.name;
+  $('b-taunt').textContent='「'+tauntOf(ch)+'」';
+  drawSprite($('cv-monster'),SPRITES[ch.monster.sprite],7);
+  if(buff)toast(BUFFS[buff].icon+' 祝福發動：'+BUFFS[buff].desc);
+  renderBstat();nextQ();
+}
+const TAUNTS={slime:'ぷるぷる～ 你聽得懂我在說什麼嗎？',cat:'にゃ～ 唸得出來再說吧！',
+ ghost:'ふふふ… 這些字你記得住嗎？',bird:'ぴよぴよ！答慢一點我就飛走囉！',
+ fox:'こんこん～ 人家可是很聰明的狐狸喔',oni:'哦？敢闖到這裡，有兩下子嘛！',
+ dragon:'吼——想通過這裡，就用日文打敗我！'};
+function tauntOf(ch){return TAUNTS[ch.monster.sprite]||'……';}
+function fleeBattle(){
+  if(B&&B.timer){clearInterval(B.timer);B.timer=null;}
+  toast('勇者悄悄地溜走了……（不扣任何東西）');
+  openRegion(curRegion);
+}
+function renderBstat(){
+  let h='';
+  for(let i=0;i<B.hearts;i++)h+='♥';
+  $('b-hearts').textContent=h||'…';
+  $('b-exp').textContent='EXP +'+B.exp+(B.mul>1?' (×2)':'');
+  $('b-hp').innerHTML=Array.from({length:B.maxhp},(_,i)=>'<i class="'+(i<B.hp?'':'off')+'"></i>').join('');
+}
+function nextQ(){
+  B.lock=false;
+  const it=B.qs[B.qi];
+  const listen=ttsOK()&&Math.random()<0.4;
+  const kind=B.ch.kind;
+  const optKey=(kind==='kana')?(listen?'jp':'ro'):'zh';
+  // 選項池：假名章節可跨章混入其他假名；同標籤（如 じ/ぢ 同音）去重
+  const cand=shuffle((kind==='kana'?KANA_ALL:B.ch.items).filter(x=>x!==it&&x[optKey]!==it[optKey]));
+  const seen={};seen[it[optKey]]=1;
+  const others=[];
+  for(const c of cand){
+    if(seen[c[optKey]])continue;
+    seen[c[optKey]]=1;others.push(c);
+    if(others.length===3)break;
+  }
+  B.cur={it,listen,optKey};
+  B.opts=shuffle([it].concat(others));
+  const ask=(kind==='kana')
+    ?(listen?'仔細聽！是哪一個假名？':'這個假名怎麼唸？')
+    :(kind==='phrase'
+      ?(listen?'仔細聽！這句是什麼意思？':'這句是什麼意思？')
+      :(listen?'仔細聽！這個單字是什麼意思？':'這個單字是什麼意思？'));
+  $('b-qbox').innerHTML=
+    '<div class="qask">'+ask+'</div>'+
+    (listen
+      ?'<button class="btn gold" style="font-size:22px;" onclick="sayItem(B.cur.it);SFX.tap();">🔊 再聽一次</button>'
+      :'<div class="qword'+(kind==='phrase'?' phrase':'')+'">'+it.jp+'</div>'+
+       (kind==='vocab'&&it.sub&&it.sub!==it.jp?'<div class="subkana">'+it.sub+'</div>':''));
+  $('b-opts').innerHTML=B.opts.map((o,k)=>
+    '<button class="btn" id="opt-'+k+'" onclick="answer('+k+')">'+o[optKey]+'</button>').join('');
+  if(listen||kind!=='kana')setTimeout(()=>sayItem(it),350);
+  B.t0=Date.now();B.deadline=B.t0+B.tlimit;
+  const tf=$('b-tfill');tf.style.width='100%';tf.classList.remove('hurry');
+  if(B.timer)clearInterval(B.timer);
+  B.timer=setInterval(()=>{
+    const remain=B.deadline-Date.now();
+    const frac=Math.max(remain/B.tlimit,0);
+    tf.style.width=(frac*100)+'%';
+    tf.classList.toggle('hurry',frac<.35);
+    if(remain<=0){clearInterval(B.timer);B.timer=null;timeUp();}
+  },80);
+}
+function floaty(txt,crit){
+  const s=document.createElement('span');
+  s.className='floaty'+(crit?' crit':'');
+  s.textContent=txt;
+  $('b-mzone').appendChild(s);
+  s.addEventListener('animationend',()=>s.remove());
+}
+function answer(k){
+  if(B.lock)return;
+  B.lock=true;
+  if(B.timer){clearInterval(B.timer);B.timer=null;}
+  const it=B.cur.it;
+  const right=B.opts[k]===it;
+  B.opts.forEach((o,i)=>{
+    const b=$('opt-'+i);b.disabled=true;
+    if(o===it)b.classList.add('right');
+    else if(i===k)b.classList.add('wrong');
+  });
+  if(B.ch.kind==='kana'&&!B.cur.listen)sayItem(it);
+  if(right){
+    const remain=B.deadline-Date.now();
+    const crit=remain>B.tlimit*.5;
+    B.hp--;B.exp+=crit?15:10;
+    (crit?SFX.crit:SFX.ok)();
+    const mz=$('b-mzone');mz.classList.remove('hit');void mz.offsetWidth;mz.classList.add('hit');
+    floaty(crit?'CRITICAL!!':'HIT!',crit);
+    renderBstat();
+    setTimeout(()=>{B.hp<=0?winBattle():(B.qi=(B.qi+1)%B.qs.length,nextQ());},950);
+  }else{
+    hurt('答錯了…正確是「'+it[B.cur.optKey]+'」');
+  }
+}
+function timeUp(){
+  if(B.lock)return;
+  B.lock=true;
+  const it=B.cur.it;
+  B.opts.forEach((o,i)=>{const b=$('opt-'+i);b.disabled=true;if(o===it)b.classList.add('right');});
+  hurt('時間到！正確是「'+it[B.cur.optKey]+'」');
+}
+function hurt(msg){
+  B.hearts--;SFX.bad();
+  const w=$('battlewrap');w.classList.remove('shake');void w.offsetWidth;w.classList.add('shake');
+  toast(msg);
+  B.qs.push(B.cur.it); // 答錯的字排回隊伍，直到打倒怪物為止
+  renderBstat();
+  setTimeout(()=>{B.hearts<=0?loseBattle():(B.qi=(B.qi+1)%B.qs.length,nextQ());},1200);
+}
+
+/* ================= 勝敗結算 ================= */
+function renderVictory(o){
+  // o: {head, sprite, dead, lines, gained, before, after}
+  const wUp=rankOf(WEAPONS,o.after.lv)!==rankOf(WEAPONS,o.before.lv);
+  const picks=shuffle(Object.keys(BUFFS)).slice(0,2);
+  $('result-body').innerHTML=
+    '<div class="rtitle winc">'+o.head+'</div>'+
+    '<div style="text-align:center;"><span class="'+(o.dead?'deadspr':'')+'"><canvas class="spr" id="cv-rspr"></canvas></span></div>'+
+    '<div class="panel" style="display:flex;flex-direction:column;gap:10px;">'+
+      '<div class="rexp">'+o.lines+'</div>'+
+      '<div class="bar"><div class="fill" id="r-fill" style="width:0%"></div></div>'+
+      '<div class="small mono" style="text-align:center;">Lv.'+o.after.lv+'　EXP '+o.after.cur+' / '+o.after.need+'</div>'+
+    '</div>'+
+    (o.after.lv>o.before.lv
+      ?'<div class="lvup">LEVEL UP! Lv.'+o.before.lv+' → Lv.'+o.after.lv+
+        (wUp?'<br>⚔ 新武器出現：'+rankOf(WEAPONS,o.after.lv)+'！':'')+
+        '<br><span style="font-weight:400;font-size:13px;">稱號：'+rankOf(TITLES,o.after.lv)+'</span></div>'
+      :'')+
+    '<div>'+
+      '<p class="small" style="text-align:center;margin:0 0 8px;">寶箱出現了！選一個「祝福」帶去下一場戰鬥：</p>'+
+      '<div class="buffrow">'+picks.map(k=>
+        '<div class="buffcard" onclick="pickBuff(\''+k+'\',this)">'+
+          '<div class="bic">'+BUFFS[k].icon+'</div><h4>'+BUFFS[k].name+'</h4><p>'+BUFFS[k].desc+'</p>'+
+        '</div>').join('')+'</div>'+
+    '</div>'+
+    '<button class="btn gold" style="font-size:17px;" onclick="openRegion(curRegion)">⚔ 繼續冒險</button>'+
+    '<button class="btn ghostbtn" onclick="go(\'map\');renderMap();">🗺 世界地圖</button>';
+  go('result');
+  drawSprite($('cv-rspr'),SPRITES[o.sprite],5);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const f=$('r-fill');if(f)f.style.width=Math.round(o.after.cur/o.after.need*100)+'%';
+  }));
+}
+function winBattle(){
+  let gained=B.exp+30;
+  const first=!save.clears[B.ch.id];
+  if(first)gained+=B.ch.boss?100:50;
+  gained*=B.mul;
+  const before=levelInfo(save.exp);
+  save.exp+=gained;save.clears[B.ch.id]=true;persist();
+  const after=levelInfo(save.exp);
+  SFX.win();
+  if(after.lv>before.lv)setTimeout(SFX.lvl,700);
+  renderVictory({head:'VICTORY!',sprite:B.ch.monster.sprite,dead:true,
+    lines:'擊敗 '+B.ch.monster.name+'！獲得 <b class="mono" style="color:var(--gold);">'+gained+' EXP</b>'+
+      (B.mul>1?'（經驗加倍中✨）':'')+(first?'<br><span class="small">首次通關加成 +'+(B.ch.boss?100:50)+'！'+(B.ch.boss?'主題「'+REGIONS.find(r=>r.id===curRegion).name+'」制霸！':'')+'</span>':''),
+    before,after});
+}
+function pickBuff(k,el){
+  if(save.nextBuff)return;
+  save.nextBuff=k;persist();SFX.ok();
+  document.querySelectorAll('.buffcard').forEach(b=>b.classList.add('dead'));
+  el.classList.remove('dead');el.classList.add('picked');
+  toast('獲得祝福：'+BUFFS[k].name+'！');
+}
+function loseBattle(){
+  SFX.lose();
+  const chid=B.ch.id;
+  $('result-body').innerHTML=
+    '<div class="rtitle losec">被打敗了…</div>'+
+    '<div class="panel" style="text-align:center;">'+
+      '<p style="margin:0 0 6px;">'+B.ch.monster.name+'：「還差得遠呢～」</p>'+
+      '<p class="small" style="margin:0;">小提示：先進「📖 學習」翻翻卡片，記住再來，暴擊率會大增！</p>'+
+    '</div>'+
+    '<button class="btn pink" style="font-size:17px;" onclick="startBattle(\''+chid+'\')">⚔ 再挑戰一次</button>'+
+    '<button class="btn" onclick="startLearn(\''+chid+'\')">📖 先去複習</button>'+
+    '<button class="btn ghostbtn" onclick="openRegion(curRegion)">← 返回</button>';
+  go('result');
+}
+
+/* ================= 對話劇情（Visual Novel） ================= */
+let T=null;
+function startTalk(chid){
+  const ch=CHMAP[chid];curRegion=REGION_OF[chid];
+  T={ch,i:0,exp:0,tried:false};
+  SFX.tap();go('talk');
+  $('talk-title').textContent='💬 '+ch.name;
+  $('talk-npcname').textContent=ch.npc.name;
+  drawSprite($('cv-npc'),SPRITES[ch.npc.sprite],5);
+  renderTalk();
+}
+function renderTalk(){
+  const st=T.ch.steps[T.i];
+  T.tried=false;
+  $('talk-progress').textContent='第 '+(T.i+1)+' / '+T.ch.steps.length+' 回合';
+  $('talk-jp').textContent=st.jp;
+  $('talk-zh').textContent=st.zh;
+  const order=shuffle(st.ch.map((_,k)=>k));
+  $('talk-opts').innerHTML=order.map(k=>{
+    const c=st.ch[k];
+    return '<button class="btn talkopt" id="topt-'+k+'" onclick="talkPick('+k+')">'+
+      '<span>'+c.jp+'</span><span class="small">'+c.zh+'</span></button>';
+  }).join('');
+  sayTalk();
+}
+function sayTalk(){
+  const st=T.ch.steps[T.i];
+  const jp=st.jp.replace(/（[^）]*）/g,'');
+  if(jp)say(jp);
+}
+function talkPick(k){
+  const st=T.ch.steps[T.i],c=st.ch[k];
+  if(c.ok){
+    SFX.ok();say(c.jp.replace(/（[^）]*）/g,''));
+    T.exp+=T.tried?5:10;
+    st.ch.forEach((_,i)=>{const b=$('topt-'+i);if(b)b.disabled=true;});
+    $('topt-'+k).classList.add('right');
+    setTimeout(()=>{
+      T.i++;
+      T.i>=T.ch.steps.length?endTalk():renderTalk();
+    },1000);
+  }else{
+    SFX.bad();T.tried=true;
+    const b=$('topt-'+k);b.classList.add('wrong');b.disabled=true;
+    toast(c.why||'再想想看！');
+  }
+}
+function endTalk(){
+  const first=!save.clears[T.ch.id];
+  const gained=T.exp+20+(first?30:0);
+  const before=levelInfo(save.exp);
+  save.exp+=gained;save.clears[T.ch.id]=true;persist();
+  const after=levelInfo(save.exp);
+  SFX.win();
+  if(after.lv>before.lv)setTimeout(SFX.lvl,700);
+  renderVictory({head:'對話完成！',sprite:T.ch.npc.sprite,dead:false,
+    lines:ch2name(T.ch)+'對你露出了微笑。獲得 <b class="mono" style="color:var(--gold);">'+gained+' EXP</b>'+
+      (first?'<br><span class="small">首次通關加成 +30！</span>':''),
+    before,after});
+}
+function ch2name(ch){return '「'+ch.npc.name+'」';}
+
+/* ================= 畫符文（寫字板） ================= */
+let W=null,parts=[],drawing=false,lastP=null,strokeCount=0;
+function startWrite(chid){
+  W={ch:CHMAP[chid],i:0};curRegion=REGION_OF[chid];
+  SFX.tap();go('write');renderWrite();
+}
+function renderWrite(){
+  const ch=W.ch,it=ch.items[W.i];
+  $('write-title').textContent='✍ 符文修行・'+ch.name;
+  $('write-chips').innerHTML=ch.items.map((t,k)=>
+    '<button class="btn'+(k===W.i?' onn':'')+'" onclick="W.i='+k+';SFX.tap();renderWrite();">'+t.jp+'</button>').join('');
+  $('write-memo').innerHTML='💡 '+it.memo+
+    (it.ex?'<br>例字：<b style="color:var(--gold);">'+it.ex+'</b>':'');
+  const g=$('cv-guide'),x=g.getContext('2d');
+  x.clearRect(0,0,g.width,g.height);
+  x.fillStyle='rgba(148,176,194,.30)';
+  x.font='900 '+(it.jp.length>1?'260px':'430px')+' "Microsoft JhengHei","PingFang TC",sans-serif';
+  x.textAlign='center';x.textBaseline='middle';
+  x.fillText(it.jp,300,330);
+  clearInk();
+}
+function clearInk(){
+  const c=$('cv-ink');c.getContext('2d').clearRect(0,0,c.width,c.height);
+  strokeCount=0;
+}
+function sayCurrentKana(){sayItem(W.ch.items[W.i]);SFX.tap();}
+function finishWrite(){
+  if(strokeCount===0){toast('先寫寫看再注入靈力！');return;}
+  spawnParts(300,300,46,3.2);
+  SFX.lvl();
+  save.exp+=5;persist();
+  toast('「'+W.ch.items[W.i].jp+'」靈力注入成功！+5 EXP');
+  setTimeout(()=>{W.i=(W.i+1)%W.ch.items.length;renderWrite();},900);
+}
+function spawnParts(x,y,n,pow){
+  const cols=['#ffcd75','#ff9edb','#f4f4f4','#7ce26a','#3be0ff'];
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2,v=(pow||1)*(Math.random()*3+1);
+    parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-1.2,life:1,
+      col:cols[Math.floor(Math.random()*cols.length)]});
+  }
+}
+function fxLoop(){
+  requestAnimationFrame(fxLoop);
+  if(!$('scr-write').classList.contains('on')){if(parts.length)parts.length=0;return;}
+  const cv=$('cv-fx'),x=cv.getContext('2d');
+  x.clearRect(0,0,cv.width,cv.height);
+  for(let i=parts.length-1;i>=0;i--){
+    const p=parts[i];
+    p.x+=p.vx;p.y+=p.vy;p.vy+=.12;p.life-=.025;
+    if(p.life<=0){parts.splice(i,1);continue;}
+    x.globalAlpha=Math.max(p.life,0);
+    x.fillStyle=p.col;
+    const s=10*p.life+2;
+    x.fillRect(p.x-s/2,p.y-s/2,s,s);
+  }
+  x.globalAlpha=1;
+}
+function initWriting(){
+  const fx=$('cv-fx'),ink=$('cv-ink');
+  function pos(e){
+    const r=fx.getBoundingClientRect();
+    return{x:(e.clientX-r.left)*fx.width/r.width,y:(e.clientY-r.top)*fx.height/r.height};
+  }
+  fx.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    try{fx.setPointerCapture(e.pointerId);}catch(err){}
+    drawing=true;strokeCount++;lastP=pos(e);SFX.spark();
+  });
+  fx.addEventListener('pointermove',e=>{
+    if(!drawing)return;
+    const p=pos(e),x=ink.getContext('2d');
+    x.strokeStyle='#ff9edb';x.lineWidth=26;x.lineCap='round';x.lineJoin='round';
+    x.beginPath();x.moveTo(lastP.x,lastP.y);x.lineTo(p.x,p.y);x.stroke();
+    spawnParts(p.x,p.y,2,1);
+    if(Math.random()<.15)SFX.spark();
+    lastP=p;
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(ev=>
+    fx.addEventListener(ev,()=>{drawing=false;}));
+}
+
+/* ================= 啟動 ================= */
+drawSprite($('cv-hero'),SPRITES.hero,6);
+drawSprite($('cv-boss-t'),SPRITES.dragon,6);
+initWriting();
+requestAnimationFrame(fxLoop);
+go('title');
+</script>
+</body>
+</html>
