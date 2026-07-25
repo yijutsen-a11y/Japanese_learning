@@ -230,7 +230,10 @@ canvas.spr{image-rendering:pixelated;display:block;}
       免安裝・進度自動存在這台裝置的瀏覽器<br>
       建議開啟聲音，體驗 8-bit 音效與日／韓發音
     </p>
-    <button class="btn ghostbtn" style="align-self:center;font-size:12px;padding:5px 10px;" onclick="resetSave()">重置進度</button>
+    <div style="align-self:center;display:flex;gap:8px;">
+      <button class="btn ghostbtn" style="font-size:12px;padding:5px 10px;" onclick="resetSave()">重置進度</button>
+      <button class="btn ghostbtn" style="font-size:12px;padding:5px 10px;" onclick="adminPrompt()">admin</button>
+    </div>
   </div>
 
   <!-- 世界地圖（區域選擇） -->
@@ -1596,6 +1599,14 @@ function go(id){
 }
 let curRegion='r0';
 let curWorld='jp';
+let ADMIN=false;
+function adminPrompt(){
+  const p=prompt('輸入通關密語（管理員模式：解鎖全部關卡）');
+  if(p==null)return;
+  if(p.trim().toLowerCase()==='admin'){
+    ADMIN=true;SFX.lvl();toast('🔓 管理員模式開啟：全部關卡已解鎖');
+  }else{SFX.bad();toast('密語錯誤');}
+}
 function WREGS(){return WORLDS[curWorld].regions;}
 
 /* ================= 進度與解鎖 ================= */
@@ -1605,11 +1616,13 @@ function regionProgress(r){
   return{done,total:r.chapters.length};
 }
 function regionUnlocked(i){
+  if(ADMIN)return true;
   if(i===0)return true;
   const p=regionProgress(WREGS()[i-1]);
   return p.done>=Math.ceil(p.total/2);
 }
 function chapterUnlocked(r,idx){
+  if(ADMIN)return true;
   const ch=r.chapters[idx];
   if(ch.boss)return r.chapters.filter(c=>!c.boss).every(c=>save.clears[c.id]);
   if(idx===0)return true;

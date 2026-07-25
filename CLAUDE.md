@@ -4,15 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 專案概觀
 
-「可不可愛、日文厲害」——像素 RPG 語言學習遊戲，雙大陸：日本（五十音到 N1）＋韓國（諺文到 TOPIK II）。**整個遊戲就是一個檔案 `index.html`**（HTML+CSS+JS），零依賴、無 build。目前內容狀態與玩法清單見 `PROJECT_STATUS.md`（內容大改時要同步更新它與 root `README.md` 總覽表）。
+「可不可愛、日文厲害」——像素 RPG 語言學習遊戲，雙大陸：日本（五十音到 N1）＋韓國（諺文到 TOPIK II）。**整個遊戲就是一個檔案 `index.html`**（HTML+CSS+JS），零依賴、無 build。目前內容狀態與玩法清單見 `PROJECT_STATUS.md`（內容大改時要同步更新它；父層工作區 `D:\claude\README.md` 的總覽表也一併更新——注意本 repo 自己的 `README.md` 只是兩行 stub，總覽表在 repo 之外的父目錄）。
 
 執行：直接用瀏覽器開 `index.html`（建議直式視窗）。
+
+部署：GitHub repo 為 https://github.com/yijutsen-a11y/Japanese_learning ，GitHub Pages 已啟用（https://yijutsen-a11y.github.io/Japanese_learning/ ）——push 到 `main` 即上線，無其他部署步驟。
 
 ## 硬性限制
 
 - **Artifact 嚴格 CSP**：禁止外部圖片、字型、CDN、fetch。所有素材以 Canvas（像素 sprite）、CSS、WebAudio（音效）程式合成；日文發音用瀏覽器內建 `speechSynthesis`（ja-JP），無日文語音時聽力題自動退化為閱讀題（`ttsOK()` 判斷）。
 - 保持單檔：不要拆檔、不要引入框架。
-- 韓文字母（諺文）沒有筆順資料（KanjiVG 只有日文假名），寫字板會自動退回字型描邊——這是預期行為。
+- 韓文字母（諺文）沒有筆順資料（KanjiVG 只有日文假名），寫字板會自動退回字型描邊——這是預期行為。筆順資料離線嵌入在 `STROKES` 常數（KanjiVG 點列，74 字）。
 
 ## 驗證（改完必跑）
 
