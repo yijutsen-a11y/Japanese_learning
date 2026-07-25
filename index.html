@@ -366,15 +366,54 @@ canvas.spr{image-rendering:pixelated;display:block;}
 <script>
 'use strict';
 /* ================= 內容資料 ================= */
+// 假名→羅馬拼音（Hepburn）：把單字的假名讀音自動轉成羅馬拼音，確保每張字卡都有拼音協助記憶
+const ROMA_Y={
+  'きゃ':'kya','きゅ':'kyu','きょ':'kyo','ぎゃ':'gya','ぎゅ':'gyu','ぎょ':'gyo',
+  'しゃ':'sha','しゅ':'shu','しょ':'sho','じゃ':'ja','じゅ':'ju','じょ':'jo',
+  'ちゃ':'cha','ちゅ':'chu','ちょ':'cho','にゃ':'nya','にゅ':'nyu','にょ':'nyo',
+  'ひゃ':'hya','ひゅ':'hyu','ひょ':'hyo','びゃ':'bya','びゅ':'byu','びょ':'byo',
+  'ぴゃ':'pya','ぴゅ':'pyu','ぴょ':'pyo','みゃ':'mya','みゅ':'myu','みょ':'myo',
+  'りゃ':'rya','りゅ':'ryu','りょ':'ryo'};
+const ROMA_1={
+  'あ':'a','い':'i','う':'u','え':'e','お':'o',
+  'か':'ka','き':'ki','く':'ku','け':'ke','こ':'ko','が':'ga','ぎ':'gi','ぐ':'gu','げ':'ge','ご':'go',
+  'さ':'sa','し':'shi','す':'su','せ':'se','そ':'so','ざ':'za','じ':'ji','ず':'zu','ぜ':'ze','ぞ':'zo',
+  'た':'ta','ち':'chi','つ':'tsu','て':'te','と':'to','だ':'da','ぢ':'ji','づ':'zu','で':'de','ど':'do',
+  'な':'na','に':'ni','ぬ':'nu','ね':'ne','の':'no',
+  'は':'ha','ひ':'hi','ふ':'fu','へ':'he','ほ':'ho','ば':'ba','び':'bi','ぶ':'bu','べ':'be','ぼ':'bo',
+  'ぱ':'pa','ぴ':'pi','ぷ':'pu','ぺ':'pe','ぽ':'po',
+  'ま':'ma','み':'mi','む':'mu','め':'me','も':'mo','や':'ya','ゆ':'yu','よ':'yo',
+  'ら':'ra','り':'ri','る':'ru','れ':'re','ろ':'ro','わ':'wa','ゐ':'i','ゑ':'e','を':'o','ん':'n',
+  'ぁ':'a','ぃ':'i','ぅ':'u','ぇ':'e','ぉ':'o','ゃ':'ya','ゅ':'yu','ょ':'yo','ゎ':'wa'};
+function toRomaji(kana){
+  if(!kana)return '';
+  // 片假名→平假名（保留長音符 ー），其餘符號原樣輸出
+  let s=kana.replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60));
+  let out='';
+  for(let i=0;i<s.length;i++){
+    const two=s.substr(i,2);
+    if(ROMA_Y[two]){out+=ROMA_Y[two];i++;continue;}
+    const c=s[i];
+    if(c==='っ'||c==='ッ'){ // 促音：重複下一個子音（ち系→t）
+      const nr=ROMA_Y[s.substr(i+1,2)]||ROMA_1[s[i+1]]||'';
+      if(nr)out+=(nr[0]==='c'?'t':nr[0]);
+      continue;
+    }
+    if(c==='ー'){const m=out.match(/[aeiou]$/);if(m)out+=m[0];continue;} // 長音：重複前一母音
+    if(ROMA_1[c]!==undefined){out+=ROMA_1[c];continue;}
+    out+=c; // 非假名（漢字/標點）原樣保留
+  }
+  return out;
+}
 // 假名章節：[假名, 羅馬音, 聯想記憶, 代表例字]
 function kanaCh(id,name,mon,spr,arr){
   return {id,name,kind:'kana',monster:{name:mon,sprite:spr},
     items:arr.map(a=>({jp:a[0],ro:a[1],zh:a[1],memo:a[2],ex:a[3]}))};
 }
 // 單字：假名為主（N5/N4）
-function vh(kana,kanji,zh,memo){return {jp:kana,sub:kanji,kana:kana,zh,memo};}
+function vh(kana,kanji,zh,memo){return {jp:kana,sub:kanji,kana:kana,zh,memo,ro:toRomaji(kana)};}
 // 單字：漢字為主（N3+），sub 為假名讀音
-function vk(kanji,kana,zh,memo){return {jp:kanji,sub:kana,kana:kana,zh,memo};}
+function vk(kanji,kana,zh,memo){return {jp:kanji,sub:kana,kana:kana,zh,memo,ro:toRomaji(kana)};}
 function vocabCh(id,name,mon,spr,items){return {id,name,kind:'vocab',monster:{name:mon,sprite:spr},items};}
 function phraseCh(id,name,mon,spr,items){return {id,name,kind:'phrase',monster:{name:mon,sprite:spr},items};}
 
@@ -1078,8 +1117,8 @@ const BUFFS={
 };
 
 /* ================= 韓國大陸 ================= */
-// 韓文單字：kr 原文、ro 羅馬拼音（卡面副標）、zh 中文、memo 聯想
-function kv(kr,ro,zh,memo){return {jp:kr,sub:ro,kana:kr,zh,memo};}
+// 韓文單字：kr 原文、ro 羅馬拼音（卡面顯示為金色拼音列，與日文一致）、zh 中文、memo 聯想
+function kv(kr,ro,zh,memo){return {jp:kr,kana:kr,zh,memo,ro:ro};}
 const REGIONS_KR=[
 {id:'kr0',icon:'slime',name:'新手村（韓）',desc:'韓劇裡天天聽到的那幾句，先學先贏',chapters:[
   phraseCh('kc1','勇者的第一句話','見習史萊姆','slime',[
