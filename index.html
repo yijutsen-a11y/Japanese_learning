@@ -374,8 +374,16 @@ const ROMA_Y={
   'ひゃ':'hya','ひゅ':'hyu','ひょ':'hyo','びゃ':'bya','びゅ':'byu','びょ':'byo',
   'ぴゃ':'pya','ぴゅ':'pyu','ぴょ':'pyo','みゃ':'mya','みゅ':'myu','みょ':'myo',
   'りゃ':'rya','りゅ':'ryu','りょ':'ryo'};
+// 外來語擴充音（チェ/ファ/ティ/ウィ…），須在拗音表之前比對
+const ROMA_X={
+  'しぇ':'she','じぇ':'je','ちぇ':'che',
+  'てぃ':'ti','でぃ':'di','とぅ':'tu','どぅ':'du','てゅ':'tyu','でゅ':'dyu',
+  'ふぁ':'fa','ふぃ':'fi','ふぇ':'fe','ふぉ':'fo','ふゅ':'fyu',
+  'うぃ':'wi','うぇ':'we','うぉ':'wo','いぇ':'ye',
+  'つぁ':'tsa','つぃ':'tsi','つぇ':'tse','つぉ':'tso',
+  'ゔぁ':'va','ゔぃ':'vi','ゔぇ':'ve','ゔぉ':'vo'};
 const ROMA_1={
-  'あ':'a','い':'i','う':'u','え':'e','お':'o',
+  'あ':'a','い':'i','う':'u','え':'e','お':'o','ゔ':'vu',
   'か':'ka','き':'ki','く':'ku','け':'ke','こ':'ko','が':'ga','ぎ':'gi','ぐ':'gu','げ':'ge','ご':'go',
   'さ':'sa','し':'shi','す':'su','せ':'se','そ':'so','ざ':'za','じ':'ji','ず':'zu','ぜ':'ze','ぞ':'zo',
   'た':'ta','ち':'chi','つ':'tsu','て':'te','と':'to','だ':'da','ぢ':'ji','づ':'zu','で':'de','ど':'do',
@@ -392,10 +400,11 @@ function toRomaji(kana){
   let out='';
   for(let i=0;i<s.length;i++){
     const two=s.substr(i,2);
+    if(ROMA_X[two]){out+=ROMA_X[two];i++;continue;}
     if(ROMA_Y[two]){out+=ROMA_Y[two];i++;continue;}
     const c=s[i];
     if(c==='っ'||c==='ッ'){ // 促音：重複下一個子音（ち系→t）
-      const nr=ROMA_Y[s.substr(i+1,2)]||ROMA_1[s[i+1]]||'';
+      const nr=ROMA_X[s.substr(i+1,2)]||ROMA_Y[s.substr(i+1,2)]||ROMA_1[s[i+1]]||'';
       if(nr)out+=(nr[0]==='c'?'t':nr[0]);
       continue;
     }
@@ -553,30 +562,30 @@ const REGIONS=[
     {jp:'いくらですか？',ro:'i·ku·ra·de·su·ka',zh:'多少錢？',memo:'旅遊使用率最高的一句。'},
     {jp:'これをください',ro:'ko·re·o·ku·da·sa·i',zh:'請給我這個',memo:'指著菜單或商品說，萬能句。'},
     {jp:'まっすぐです',ro:'ma·s·su·gu·de·su',zh:'直走',memo:'問路時最常聽到的回答。'},
-    {jp:'みぎにまがってください',ro:'mi·gi·ni·ma·ga·t·te',zh:'請右轉',memo:'みぎ＝右、ひだり＝左，搭計程車必備。'},
-    {jp:'タクシーをよんでください',ro:'ta·ku·shi·i·o·yo·n·de',zh:'請幫我叫計程車',memo:'在旅館櫃台說這句就對了。'},
+    {jp:'みぎにまがってください',ro:'mi·gi·ni·ma·ga·t·te·ku·da·sa·i',zh:'請右轉',memo:'みぎ＝右、ひだり＝左，搭計程車必備。'},
+    {jp:'タクシーをよんでください',ro:'ta·ku·shi·i·o·yo·n·de·ku·da·sa·i',zh:'請幫我叫計程車',memo:'在旅館櫃台說這句就對了。'},
   ]),
   phraseCh('t2','餐廳篇','貪吃史萊姆','slime',[
     {jp:'おすすめはなんですか？',ro:'o·su·su·me·wa·na·n·de·su·ka',zh:'推薦什麼？',memo:'讓店家推坑，通常不會踩雷。'},
     {jp:'メニューをください',ro:'me·nyu·u·o·ku·da·sa·i',zh:'請給我菜單',memo:'坐下後的第一句。'},
     {jp:'おみずをください',ro:'o·mi·zu·o·ku·da·sa·i',zh:'請給我水',memo:'日本餐廳的水通常免費。'},
     {jp:'よやくしています',ro:'yo·ya·ku·shi·te·i·ma·su',zh:'我有預約',memo:'進店報上這句＋名字。'},
-    {jp:'おかいけいおねがいします',ro:'o·ka·i·ke·i·o·ne·ga·i',zh:'請結帳',memo:'吃完呼喚店員用。'},
+    {jp:'おかいけいおねがいします',ro:'o·ka·i·ke·i·o·ne·ga·i·shi·ma·su',zh:'請結帳',memo:'吃完呼喚店員用。'},
     {jp:'おいしかったです',ro:'o·i·shi·ka·t·ta·de·su',zh:'（剛才）很好吃',memo:'吃完的過去式，店家聽了會很開心。'},
   ]),
   phraseCh('t3','購物篇','商人狐狸','fox',[
     {jp:'これはいくらですか？',ro:'ko·re·wa·i·ku·ra·de·su·ka',zh:'這個多少錢？',memo:'指著商品問就行。'},
     {jp:'ためしてもいいですか？',ro:'ta·me·shi·te·mo·i·i·de·su·ka',zh:'可以試穿／試用嗎？',memo:'買衣服鞋子前先問一聲。'},
-    {jp:'カードでおねがいします',ro:'ka·a·do·de·o·ne·ga·i',zh:'我要刷卡',memo:'現金的話說「げんきんで」。'},
+    {jp:'カードでおねがいします',ro:'ka·a·do·de·o·ne·ga·i·shi·ma·su',zh:'我要刷卡',memo:'現金的話說「げんきんで」。'},
     {jp:'ふくろをください',ro:'fu·ku·ro·o·ku·da·sa·i',zh:'請給我袋子',memo:'日本袋子多半要加購喔。'},
     {jp:'めんぜいできますか？',ro:'me·n·ze·i·de·ki·ma·su·ka',zh:'可以免稅嗎？',memo:'記得帶護照！'},
     {jp:'ちょっとかんがえます',ro:'cho·t·to·ka·n·ga·e·ma·su',zh:'我再想想',memo:'不想買時的禮貌脫身句。'},
   ]),
   phraseCh('t4','旅館篇','溫泉貓貓','cat',[
-    {jp:'チェックインおねがいします',ro:'che·k·ku·i·n·o·ne·ga·i',zh:'我要辦入住',memo:'到櫃台的第一句。'},
+    {jp:'チェックインおねがいします',ro:'che·k·ku·i·n·o·ne·ga·i·shi·ma·su',zh:'我要辦入住',memo:'到櫃台的第一句。'},
     {jp:'なんじまでですか？',ro:'na·n·ji·ma·de·de·su·ka',zh:'到幾點為止？',memo:'問早餐、大浴場、退房時間都好用。'},
-    {jp:'にもつをあずかってもらえますか？',ro:'ni·mo·tsu·o·a·zu·ka·t·te',zh:'可以寄放行李嗎？',memo:'退房後想繼續逛街的救星。'},
-    {jp:'WiFiのパスワードはなんですか？',ro:'wi·fi·no·pa·su·wa·a·do',zh:'WiFi 密碼是什麼？',memo:'現代旅人的生命線。'},
+    {jp:'にもつをあずかってもらえますか？',ro:'ni·mo·tsu·o·a·zu·ka·t·te·mo·ra·e·ma·su·ka',zh:'可以寄放行李嗎？',memo:'退房後想繼續逛街的救星。'},
+    {jp:'WiFiのパスワードはなんですか？',ro:'wa·i·fa·i·no·pa·su·wa·a·do·wa·na·n·de·su·ka',zh:'WiFi 密碼是什麼？',memo:'現代旅人的生命線。'},
     {jp:'おせわになりました',ro:'o·se·wa·ni·na·ri·ma·shi·ta',zh:'受您照顧了',memo:'退房時說這句，好感度爆表。'},
   ]),
   phraseCh('t5','緊急篇','慌張幽靈','ghost',[
@@ -584,7 +593,7 @@ const REGIONS=[
     {jp:'みちにまよいました',ro:'mi·chi·ni·ma·yo·i·ma·shi·ta',zh:'我迷路了',memo:'配上手機地圖一起求助。'},
     {jp:'きぶんがわるいです',ro:'ki·bu·n·ga·wa·ru·i·de·su',zh:'我不舒服',memo:'身體不適時讓周圍的人知道。'},
     {jp:'パスポートをなくしました',ro:'pa·su·po·o·to·o·na·ku·shi·ma·shi·ta',zh:'我的護照弄丟了',memo:'希望永遠用不到的一句。'},
-    {jp:'にほんごがすこししかわかりません',ro:'ni·ho·n·go·ga·su·ko·shi·shi·ka',zh:'我只會一點日文',memo:'說完對方就會放慢速度講。'},
+    {jp:'にほんごがすこししかわかりません',ro:'ni·ho·n·go·ga·su·ko·shi·shi·ka·wa·ka·ri·ma·se·n',zh:'我只會一點日文',memo:'說完對方就會放慢速度講。'},
   ]),
 ]},
 {id:'r3',icon:'fox',name:'月見酒館',desc:'跟 NPC 實戰聊天，練出會話反應',chapters:[
@@ -738,8 +747,8 @@ const REGIONS=[
     {jp:'たいわんじんです',ro:'ta·i·wa·n·ji·n·de·su',zh:'我是台灣人',memo:'國家＋じん＝〇〇人。'},
     {jp:'がくせいです',ro:'ga·ku·se·i·de·su',zh:'我是學生',memo:'職業直接＋です就能自我介紹。'},
     {jp:'しゅみはアニメです',ro:'shu·mi·wa·a·ni·me·de·su',zh:'興趣是看動畫',memo:'しゅみ（趣味）＝興趣，交朋友起手式。'},
-    {jp:'にほんごをべんきょうしています',ro:'ni·ho·n·go·o·be·n·kyo·u',zh:'我正在學日文',memo:'說完這句日本人會秒稱讚你。'},
-    {jp:'よろしくおねがいします',ro:'yo·ro·shi·ku·o·ne·ga·i',zh:'請多指教',memo:'自我介紹的標準收尾。'},
+    {jp:'にほんごをべんきょうしています',ro:'ni·ho·n·go·o·be·n·kyo·u·shi·te·i·ma·su',zh:'我正在學日文',memo:'說完這句日本人會秒稱讚你。'},
+    {jp:'よろしくおねがいします',ro:'yo·ro·shi·ku·o·ne·ga·i·shi·ma·su',zh:'請多指教',memo:'自我介紹的標準收尾。'},
   ]),
   vocabCh('f6','職業篇','工作貓貓','cat',[
     vh('かいしゃいん','会社員','上班族','かいしゃ（公司）＋いん（員）。'),
