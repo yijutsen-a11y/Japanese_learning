@@ -197,6 +197,27 @@ canvas.spr{image-rendering:pixelated;display:block;}
 .screenhead h2{margin:0;font-size:17px;letter-spacing:1px;}
 .backbtn{font-size:13px;padding:6px 10px;}
 
+/* 錯題本 / 間隔複習 */
+.srsstat{display:flex;gap:10px;}
+.srsstat>div{flex:1;background:var(--panel-hi);border:3px solid var(--ink);border-radius:2px;
+  box-shadow:0 4px 0 var(--shadow);padding:8px 4px;text-align:center;}
+.srsstat b{display:block;font-size:24px;color:var(--gold);line-height:1.2;}
+.srsstat span{font-size:11px;color:var(--dim);}
+.srslist{display:flex;flex-direction:column;gap:8px;}
+.srsrow{display:flex;align-items:center;gap:10px;padding:9px 10px;}
+.srsrow.due{border-color:var(--gold);}
+.srsrow .sw{flex:1;min-width:0;}
+.srsrow .sjp{font-size:19px;font-weight:900;line-height:1.4;}
+.srsrow .sjp .subkana{font-size:13px;}
+.srsrow .szh{font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.srsrow .sacts{display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
+.srsrow .sacts .btn{font-size:12px;padding:4px 8px;}
+.boxdots{display:flex;gap:3px;margin-top:6px;}
+.boxdots i{width:9px;height:9px;background:var(--shadow);border:2px solid var(--dim);}
+.boxdots i.onn{background:var(--green);border-color:var(--ink);}
+.duetag{font-size:11px;color:var(--gold);font-weight:700;white-space:nowrap;}
+.duetag.wait{color:var(--dim);font-weight:400;}
+
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
@@ -243,8 +264,21 @@ canvas.spr{image-rendering:pixelated;display:block;}
       <button class="btn ghostbtn backbtn" onclick="SFX.tap();go('title')">⇄ 換大陸</button>
     </div>
     <div class="panel hud" id="hud"></div>
+    <button class="btn" id="srs-entry" onclick="openSRS()"></button>
     <div class="chlist" id="regionlist"></div>
     <p class="small" style="text-align:center;margin:0;">每個區域通關一半以上，就會開啟下一個區域</p>
+  </div>
+
+  <!-- 錯題本（間隔複習） -->
+  <div class="screen" id="scr-srs">
+    <div class="screenhead">
+      <h2 id="srs-title">📕 錯題本</h2>
+      <button class="btn ghostbtn backbtn" onclick="go('map');renderMap()">← 世界地圖</button>
+    </div>
+    <div class="srsstat" id="srs-stat"></div>
+    <button class="btn gold" id="srs-go" style="font-size:17px;" onclick="startReview()"></button>
+    <p class="small" style="text-align:center;margin:0;" id="srs-hint"></p>
+    <div class="srslist" id="srs-list"></div>
   </div>
 
   <!-- 區域（章節選擇） -->
@@ -2448,12 +2482,19 @@ Object.values(WORLDS).forEach(w=>w.regions.forEach(r=>{
     monster:{name:'魔王・'+r.name,sprite:'dragon'},items:pool});
 }));
 // 索引（跨兩塊大陸；章節與區域 id 全域唯一）
-const CHMAP={},REGION_OF={},RMAP={},KANA_POOL={jp:[],kr:[]};
+// ITEM_BY_KEY：錯題本用的字→物件反查表。每個 item 也蓋上出身章節（_cid/_ck/_cw），
+// 這樣錯題複習把來自不同章節的字混在一起時，仍知道該用哪種題型與哪個干擾項池。
+const CHMAP={},REGION_OF={},RMAP={},KANA_POOL={jp:[],kr:[]},ITEM_BY_KEY={};
 Object.values(WORLDS).forEach(w=>w.regions.forEach(r=>{
   RMAP[r.id]=r;
   r.chapters.forEach(c=>{
     CHMAP[c.id]=c;REGION_OF[c.id]=r.id;
-    if(c.kind==='kana'&&!c.boss)c.items.forEach(it=>KANA_POOL[w.id].push(it));
+    if(c.boss||c.kind==='talk')return; // 魔王池是既有 item 的參照，不重複蓋章
+    c.items.forEach(it=>{
+      it._cid=c.id;it._ck=c.kind;it._cw=w.id;
+      ITEM_BY_KEY[itemKey(it)]=it;
+      if(c.kind==='kana')KANA_POOL[w.id].push(it);
+    });
   });
 }));
 
@@ -2637,9 +2678,9 @@ function drawSprite(cv,rows,scale){
 const KEY='kawaii_quest_save_v1';
 function loadSave(){
   try{const s=JSON.parse(localStorage.getItem(KEY));
-    if(s&&typeof s.exp==='number')return Object.assign({exp:0,clears:{},nextBuff:null},s);
+    if(s&&typeof s.exp==='number')return Object.assign({exp:0,clears:{},nextBuff:null,srs:{},srsDone:0},s);
   }catch(e){}
-  return{exp:0,clears:{},nextBuff:null};
+  return{exp:0,clears:{},nextBuff:null,srs:{},srsDone:0};
 }
 let save=loadSave();
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(save));}catch(e){}}
@@ -2762,6 +2803,89 @@ function totalProgress(){
   return{done,total};
 }
 
+/* ================= 錯題本 / 間隔複習（SRS） ================= */
+// Leitner 盒子制：答錯 → 掉回第 0 盒（今天再考）；複習答對 → 進一盒、間隔照 SRS_STEP 拉長；
+// 走完最後一盒就從錯題本畢業。存檔結構：save.srs[key]={box,due,miss,cid,w}，due 為「第幾天」。
+const SRS_STEP=[0,1,2,4,7,15],SRS_MAX=SRS_STEP.length,SRS_SIZE=12;
+function today(){const d=new Date();return Math.floor((d.getTime()-d.getTimezoneOffset()*6e4)/864e5);}
+function itemKey(it){return (it._cw||'jp')+'|'+it.jp+'|'+(it.zh||'');}
+function srsMiss(it){
+  if(!it||!it._cid)return;                       // 魔王池等沒出身章節的保險
+  const k=itemKey(it),e=save.srs[k];
+  if(e){e.box=0;e.due=today();e.miss=(e.miss||0)+1;}
+  else save.srs[k]={box:0,due:today(),miss:1,cid:it._cid,w:it._cw};
+  persist();
+}
+function srsHit(it){                              // 回傳 true = 這個字畢業了
+  if(!it)return false;
+  const k=itemKey(it),e=save.srs[k];
+  if(!e)return false;
+  e.box++;
+  if(e.box>=SRS_MAX){delete save.srs[k];save.srsDone=(save.srsDone||0)+1;persist();return true;}
+  e.due=today()+SRS_STEP[e.box];persist();
+  return false;
+}
+function srsEntries(w){
+  const out=[];
+  for(const k in save.srs){
+    const e=save.srs[k];if(e.w!==w)continue;
+    const it=ITEM_BY_KEY[k];if(!it)continue;      // 資料改版後找不到的舊字直接略過
+    out.push({k,e,it});
+  }
+  out.sort((a,b)=>(a.e.due-b.e.due)||((b.e.miss||0)-(a.e.miss||0)));
+  return out;
+}
+let SRSVIEW=[];
+function openSRS(){SFX.tap();go('srs');renderSRS();}
+function renderSRS(){
+  const t=today(),all=srsEntries(curWorld),due=all.filter(x=>x.e.due<=t);
+  SRSVIEW=all;
+  $('srs-title').textContent='📕 錯題本・'+WORLDS[curWorld].name;
+  $('srs-stat').innerHTML=
+    '<div><b>'+due.length+'</b><span>今天要複習</span></div>'+
+    '<div><b>'+all.length+'</b><span>錯題本收藏</span></div>'+
+    '<div><b>'+(save.srsDone||0)+'</b><span>已徹底征服</span></div>';
+  const g=$('srs-go');
+  g.disabled=!due.length;
+  g.textContent=due.length?('⚔ 開始複習（'+Math.min(due.length,SRS_SIZE)+' 題）'):'✨ 今天沒有到期的錯題！';
+  $('srs-hint').textContent=all.length
+    ?'戰鬥中答錯或超時的字會自動收進來。複習答對就往後延（'+SRS_STEP.slice(1).join('／')+' 天再考一次），連續答對 '+(SRS_MAX-1)+' 次就從錯題本畢業。'
+    :'目前一題錯題也沒有——去戰鬥吧，答錯的字會自動被收進來。';
+  $('srs-list').innerHTML=all.map((x,i)=>{
+    const late=x.e.due-t,ch=CHMAP[x.e.cid];
+    return '<div class="panel srsrow'+(late<=0?' due':'')+'">'+
+      '<div class="sw">'+
+        '<div class="sjp">'+x.it.jp+
+          (x.it.sub&&x.it.sub!==x.it.jp?' <span class="subkana">'+x.it.sub+'</span>':'')+'</div>'+
+        '<div class="szh">'+(x.it.zh||'')+'　·　'+(ch?ch.name:'')+'　·　錯 '+(x.e.miss||1)+' 次</div>'+
+        '<div class="boxdots">'+
+          Array.from({length:SRS_MAX-1},(_,b)=>'<i class="'+(b<x.e.box?'onn':'')+'"></i>').join('')+
+        '</div>'+
+      '</div>'+
+      '<div class="sacts">'+
+        '<span class="duetag'+(late<=0?'':' wait')+'">'+(late<=0?'今天複習':late+' 天後')+'</span>'+
+        '<button class="btn ghostbtn" onclick="srsSay('+i+')">🔊</button>'+
+        '<button class="btn ghostbtn" onclick="srsForget('+i+')">✔ 我會了</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+function srsSay(i){const x=SRSVIEW[i];if(x){say(x.it.kana||x.it.jp,WORLDS[x.e.w].tts);SFX.tap();}}
+function srsForget(i){
+  const x=SRSVIEW[i];if(!x)return;
+  delete save.srs[x.k];save.srsDone=(save.srsDone||0)+1;persist();
+  SFX.ok();toast('「'+x.it.jp+'」已從錯題本移除');renderSRS();
+}
+function startReview(){
+  const due=srsDue();
+  if(!due.length){SFX.bad();toast('今天沒有到期的錯題，去冒險吧！');return;}
+  const items=shuffle(due.map(x=>x.it)).slice(0,SRS_SIZE);
+  CHMAP.__review__={id:'__review__',name:'錯題複習',kind:items[0]._ck||'vocab',review:true,
+    monster:{name:'遺忘的幽靈',sprite:'ghost'},items};
+  startBattle('__review__');
+}
+function srsDue(){const t=today();return srsEntries(curWorld).filter(x=>x.e.due<=t);}
+
 /* ================= 標題 / 世界地圖 / 每日一句 ================= */
 function startGame(w){
   curWorld=w||'jp';
@@ -2799,6 +2923,10 @@ function renderMap(){
     '<div class="bar"><div class="fill" style="width:'+Math.round(li.cur/li.need*100)+'%"></div></div>'+
     '<div class="small mono">EXP '+li.cur+' / '+li.need+'（總計 '+save.exp+'）　冒險進度 '+tp.done+' / '+tp.total+' 章</div>'+
     (buf?'<span class="bufchip">'+buf.icon+' 持有祝福：'+buf.name+'</span>':'');
+  const nd=srsDue().length,ns=srsEntries(curWorld).length,se=$('srs-entry');
+  se.className='btn'+(nd?' gold':' ghostbtn');
+  se.textContent=nd?('📕 錯題本：今天有 '+nd+' 個字要複習！')
+                   :('📕 錯題本'+(ns?'（收藏 '+ns+' 字，都還沒到期）':'（目前是空的）'));
   $('regionlist').innerHTML=WREGS().map((r,i)=>{
     const ok=regionUnlocked(i);
     const p=regionProgress(r);
@@ -2904,7 +3032,8 @@ function navLearn(d){
 /* ================= 戰鬥 ================= */
 let B=null;
 function startBattle(chid){
-  const ch=CHMAP[chid];curRegion=REGION_OF[chid];
+  const ch=CHMAP[chid];
+  if(!ch.review)curRegion=REGION_OF[chid];       // 錯題複習不屬於任何區域
   const buff=save.nextBuff;
   save.nextBuff=null;persist();
   let qs=shuffle(ch.items);
@@ -2912,7 +3041,8 @@ function startBattle(chid){
   B={ch,qs,qi:0,hp:qs.length,maxhp:qs.length,
      hearts:3+(buff==='heart'?1:0),
      tlimit:((ch.boss?8:10)+(buff==='time'?4:0))*1000,
-     mul:(buff==='exp'?2:1),exp:0,timer:null,lock:false,buff};
+     mul:(buff==='exp'?2:1),exp:0,timer:null,lock:false,buff,
+     missed:{},grad:0};
   SFX.tap();go('battle');
   $('b-mname').textContent=ch.monster.name;
   $('b-taunt').textContent='「'+tauntOf(ch)+'」';
@@ -2931,12 +3061,14 @@ const TAUNTS={
   dragon:'크앙——想通過這裡，就用韓文打敗我！'},
 };
 function tauntOf(ch){
+  if(ch.review)return '你忘掉的字，我可都收著呢……敢再答錯一次嗎？';
   const w=RMAP[REGION_OF[ch.id]].world;
   return TAUNTS[w][ch.monster.sprite]||'……';
 }
 function fleeBattle(){
   if(B&&B.timer){clearInterval(B.timer);B.timer=null;}
   toast('勇者悄悄地溜走了……（不扣任何東西）');
+  if(B&&B.ch.review){openSRS();return;}
   openRegion(curRegion);
 }
 function renderBstat(){
@@ -2950,11 +3082,14 @@ function nextQ(){
   B.lock=false;
   const it=B.qs[B.qi];
   const listen=ttsOK()&&Math.random()<0.4;
-  const kind=B.ch.kind;
-  const world=RMAP[REGION_OF[B.ch.id]].world;
+  // 錯題複習混了各章節的字，題型與干擾項池要看每個字自己的出身章節
+  const kind=B.ch.review?(it._ck||'vocab'):B.ch.kind;
+  const world=B.ch.review?(it._cw||curWorld):RMAP[REGION_OF[B.ch.id]].world;
   const optKey=(kind==='kana')?(listen?'jp':'ro'):'zh';
   // 選項池：假名／字母章節可跨章混入同大陸的其他字；同標籤（如 じ/ぢ 同音）去重
-  const cand=shuffle((kind==='kana'?KANA_POOL[world]:B.ch.items).filter(x=>x!==it&&x[optKey]!==it[optKey]));
+  const pool=(kind==='kana')?KANA_POOL[world]
+            :(B.ch.review?((CHMAP[it._cid]||B.ch).items):B.ch.items);
+  const cand=shuffle(pool.filter(x=>x!==it&&x[optKey]!==it[optKey]));
   const seen={};seen[it[optKey]]=1;
   const others=[];
   for(const c of cand){
@@ -2962,7 +3097,7 @@ function nextQ(){
     seen[c[optKey]]=1;others.push(c);
     if(others.length===3)break;
   }
-  B.cur={it,listen,optKey};
+  B.cur={it,listen,optKey,kind};
   B.opts=shuffle([it].concat(others));
   const lt=WORLDS[world].letter;
   const ask=(kind==='kana')
@@ -3008,12 +3143,14 @@ function answer(k){
     if(o===it)b.classList.add('right');
     else if(i===k)b.classList.add('wrong');
   });
-  if(B.ch.kind==='kana'&&!B.cur.listen)sayItem(it);
+  if(B.cur.kind==='kana'&&!B.cur.listen)sayItem(it);
   if(right){
     const remain=B.deadline-Date.now();
     const crit=remain>B.tlimit*.5;
     B.hp--;B.exp+=crit?15:10;
     (crit?SFX.crit:SFX.ok)();
+    // 錯題本記帳：這場沒栽在這個字上才算真的記住，往後推一盒
+    if(!B.missed[itemKey(it)]&&srsHit(it)){B.grad++;toast('✨「'+it.jp+'」從錯題本畢業了！');}
     const mz=$('b-mzone');mz.classList.remove('hit');void mz.offsetWidth;mz.classList.add('hit');
     floaty(crit?'CRITICAL!!':'HIT!',crit);
     renderBstat();
@@ -3033,6 +3170,8 @@ function hurt(msg){
   B.hearts--;SFX.bad();
   const w=$('battlewrap');w.classList.remove('shake');void w.offsetWidth;w.classList.add('shake');
   toast(msg);
+  B.missed[itemKey(B.cur.it)]=1;
+  srsMiss(B.cur.it);   // 答錯／超時 → 收進錯題本，明天起排複習
   B.qs.push(B.cur.it); // 答錯的字排回隊伍，直到打倒怪物為止
   renderBstat();
   setTimeout(()=>{B.hearts<=0?loseBattle():(B.qi=(B.qi+1)%B.qs.length,nextQ());},1200);
@@ -3063,7 +3202,9 @@ function renderVictory(o){
           '<div class="bic">'+BUFFS[k].icon+'</div><h4>'+BUFFS[k].name+'</h4><p>'+BUFFS[k].desc+'</p>'+
         '</div>').join('')+'</div>'+
     '</div>'+
-    '<button class="btn gold" style="font-size:17px;" onclick="openRegion(curRegion)">⚔ 繼續冒險</button>'+
+    (o.review
+      ?'<button class="btn gold" style="font-size:17px;" onclick="openSRS()">📕 回錯題本</button>'
+      :'<button class="btn gold" style="font-size:17px;" onclick="openRegion(curRegion)">⚔ 繼續冒險</button>')+
     '<button class="btn ghostbtn" onclick="go(\'map\');renderMap();">🗺 世界地圖</button>';
   go('result');
   drawSprite($('cv-rspr'),SPRITES[o.sprite],5);
@@ -3072,18 +3213,23 @@ function renderVictory(o){
   }));
 }
 function winBattle(){
+  const rev=!!B.ch.review;
   let gained=B.exp+30;
-  const first=!save.clears[B.ch.id];
+  const first=!rev&&!save.clears[B.ch.id];
   if(first)gained+=B.ch.boss?100:50;
   gained*=B.mul;
   const before=levelInfo(save.exp);
-  save.exp+=gained;save.clears[B.ch.id]=true;persist();
+  save.exp+=gained;
+  if(!rev)save.clears[B.ch.id]=true;   // 複習不算通關章節
+  persist();
   const after=levelInfo(save.exp);
   SFX.win();
   if(after.lv>before.lv)setTimeout(SFX.lvl,700);
-  renderVictory({head:'VICTORY!',sprite:B.ch.monster.sprite,dead:true,
+  renderVictory({head:rev?'複習完成！':'VICTORY!',sprite:B.ch.monster.sprite,dead:true,review:rev,
     lines:'擊敗 '+B.ch.monster.name+'！獲得 <b class="mono" style="color:var(--gold);">'+gained+' EXP</b>'+
-      (B.mul>1?'（經驗加倍中✨）':'')+(first?'<br><span class="small">首次通關加成 +'+(B.ch.boss?100:50)+'！'+(B.ch.boss?'主題「'+RMAP[curRegion].name+'」制霸！':'')+'</span>':''),
+      (B.mul>1?'（經驗加倍中✨）':'')+
+      (rev&&B.grad?'<br><span class="small">✨ '+B.grad+' 個字徹底征服，從錯題本畢業！</span>':'')+
+      (first?'<br><span class="small">首次通關加成 +'+(B.ch.boss?100:50)+'！'+(B.ch.boss?'主題「'+RMAP[curRegion].name+'」制霸！':'')+'</span>':''),
     before,after});
 }
 function pickBuff(k,el){
@@ -3095,16 +3241,21 @@ function pickBuff(k,el){
 }
 function loseBattle(){
   SFX.lose();
-  const chid=B.ch.id;
+  const chid=B.ch.id,rev=!!B.ch.review;
   $('result-body').innerHTML=
     '<div class="rtitle losec">被打敗了…</div>'+
     '<div class="panel" style="text-align:center;">'+
       '<p style="margin:0 0 6px;">'+B.ch.monster.name+'：「還差得遠呢～」</p>'+
-      '<p class="small" style="margin:0;">小提示：先進「📖 學習」翻翻卡片，記住再來，暴擊率會大增！</p>'+
+      '<p class="small" style="margin:0;">'+(rev
+        ?'小提示：錯題本裡點 🔊 多聽幾次，或回原章節翻翻卡片再回來。'
+        :'小提示：先進「📖 學習」翻翻卡片，記住再來，暴擊率會大增！')+'</p>'+
     '</div>'+
-    '<button class="btn pink" style="font-size:17px;" onclick="startBattle(\''+chid+'\')">⚔ 再挑戰一次</button>'+
-    '<button class="btn" onclick="startLearn(\''+chid+'\')">📖 先去複習</button>'+
-    '<button class="btn ghostbtn" onclick="openRegion(curRegion)">← 返回</button>';
+    (rev
+      ?'<button class="btn pink" style="font-size:17px;" onclick="startReview()">⚔ 再挑戰一次</button>'+
+       '<button class="btn ghostbtn" onclick="openSRS()">← 回錯題本</button>'
+      :'<button class="btn pink" style="font-size:17px;" onclick="startBattle(\''+chid+'\')">⚔ 再挑戰一次</button>'+
+       '<button class="btn" onclick="startLearn(\''+chid+'\')">📖 先去複習</button>'+
+       '<button class="btn ghostbtn" onclick="openRegion(curRegion)">← 返回</button>');
   go('result');
 }
 
