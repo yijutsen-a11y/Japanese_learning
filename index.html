@@ -234,7 +234,7 @@ canvas.spr{image-rendering:pixelated;display:block;}
 
   <!-- 標題畫面 -->
   <div class="screen" id="scr-title">
-    <div class="tag" style="align-self:center;">PIXEL RPG × 日語・韓語　選一塊大陸開始攻略</div>
+    <div class="tag" style="align-self:center;">PIXEL RPG × 日語・韓語・英語　選一塊大陸開始攻略</div>
     <h1 class="logo" style="margin:0;">
       <span class="l1">可不可愛</span>
       <span class="l2">日文厲害</span>
@@ -247,9 +247,10 @@ canvas.spr{image-rendering:pixelated;display:block;}
     </div>
     <button class="btn gold pressstart" style="align-self:center;font-size:18px;padding:13px 30px;" onclick="startGame('jp')">🌸 攻破日本大陸</button>
     <button class="btn gold pressstart" style="align-self:center;font-size:18px;padding:13px 30px;" onclick="startGame('kr')">💜 攻破韓國大陸</button>
+    <button class="btn gold pressstart" style="align-self:center;font-size:18px;padding:13px 30px;" onclick="startGame('us')">🗽 攻破美國大陸（IELTS 5→8）</button>
     <p class="small" style="text-align:center;margin:0;">
       免安裝・進度自動存在這台裝置的瀏覽器<br>
-      建議開啟聲音，體驗 8-bit 音效與日／韓發音
+      建議開啟聲音，體驗 8-bit 音效與日／韓／英發音
     </p>
     <div style="align-self:center;display:flex;gap:8px;">
       <button class="btn ghostbtn" style="font-size:12px;padding:5px 10px;" onclick="resetSave()">重置進度</button>
@@ -2464,10 +2465,580 @@ const REGIONS_KR=[
 ]},
 ];
 
+/* ================= 美國大陸（IELTS 5.0 → 8.0） ================= */
+// 英文單字：jp=單字, sub=詞性, zh=中文, memo=用法／搭配（雅思的分數都在搭配上）
+function ve(en,pos,zh,memo){return {jp:en,sub:pos,zh,memo};}
+// 英文句子（實戰句／造句）
+function pe(en,zh,memo){return {jp:en,zh,memo};}
+
+const REGIONS_US=[
+{id:'us0',icon:'slime',name:'入境大廳',desc:'Band 5 起跑：先讓嘴巴敢動',chapters:[
+  phraseCh('e1','破冰第一句','入境史萊姆','slime',[
+    pe('Nice to meet you.','很高興認識你','只用在第一次見面；第二次以後改說 Good to see you.'),
+    pe('How is it going?','最近怎麼樣？','比 How are you 更口語，回 Not bad 就夠。'),
+    pe('Could you say that again, please?','可以請你再說一次嗎？','比 What? 有禮貌十倍，聽不懂就用它。'),
+    pe("Sorry, I didn't catch that.",'抱歉我沒聽清楚','catch＝聽清楚，比 I do not understand 道地得多。'),
+    pe('Thanks a lot, I really appreciate it.','真的很感謝','appreciate 讓謝意升一級，職場信件也能用。'),
+    pe('No worries.','沒關係／不客氣','美澳超高頻的萬用回應。'),
+    pe('I am not sure I follow.','我不太懂你的意思','follow＝聽懂，比 I do not understand 委婉。'),
+  ]),
+  phraseCh('e2','入境與問路','海關幽靈','ghost',[
+    pe('I am here on holiday for two weeks.','我來度假兩週','入境官必問 purpose of visit，這句直接命中。'),
+    pe('I have nothing to declare.','我沒有東西要申報','declare＝申報，海關關鍵字。'),
+    pe('Where can I catch the airport shuttle?','機場接駁車在哪裡搭？','搭車用 catch a bus / catch a train。'),
+    pe('Could you tell me how to get to downtown?','可以告訴我怎麼去市中心嗎？','間接問句，比 How do I get 禮貌。'),
+    pe('Is it within walking distance?','走路到得了嗎？','within walking distance 是很道地的搭配。'),
+    pe('I think I am lost.','我好像迷路了','think 讓語氣軟一點，比 I am lost 自然。'),
+    pe('Keep going straight and turn left at the lights.','直走然後在紅綠燈左轉','at the lights＝在紅綠燈處，英美通用。'),
+  ]),
+  {id:'e3',name:'海關的盤問',kind:'talk',npc:{name:'海關官員 Officer Reed',sprite:'oni'},steps:[
+    {jp:'Good afternoon. May I see your passport, please?',zh:'午安，可以看一下你的護照嗎？',ch:[
+      {jp:'Sure, here you go.',zh:'當然，在這裡',ok:1},
+      {jp:'Why do you need it?',zh:'你為什麼需要？',why:'海關要求看護照是例行程序，反問會被請去小房間。'},
+      {jp:'I have nothing to declare.',zh:'我沒有東西要申報',why:'他問的是護照，答非所問。'},
+    ]},
+    {jp:'What is the purpose of your visit?',zh:'你這趟的目的是什麼？',ch:[
+      {jp:'I am here on holiday for two weeks.',zh:'我來度假兩週',ok:1},
+      {jp:'Yes, it is.',zh:'是的，沒錯',why:'這是 wh- 問句，不能用 yes/no 回答。'},
+      {jp:'I am here to work without a visa.',zh:'我沒簽證但來工作',why:'……這句話會讓你直接搭下一班飛機回去。'},
+    ]},
+    {jp:'Where will you be staying?',zh:'你會住在哪裡？',ch:[
+      {jp:'At a hotel in the city centre. Here is the booking.',zh:'市中心的旅館，這是訂房紀錄',ok:1},
+      {jp:'I have not decided yet.',zh:'我還沒決定',why:'沒有住宿證明是入境被刁難的頭號原因。'},
+      {jp:'It is a secret.',zh:'這是秘密',why:'跟海關開玩笑是全世界最貴的玩笑。'},
+    ]},
+    {jp:'Enjoy your stay. Next, please!',zh:'祝你旅途愉快，下一位！',ch:[
+      {jp:'Thank you, have a good day.',zh:'謝謝，祝你有美好的一天',ok:1},
+      {jp:'Nice to meet you again.',zh:'很高興再次見到你',why:'你們是第一次見面，again 用錯了。'},
+      {jp:'How much is it?',zh:'這多少錢？',why:'入境不用付錢，別讓他改變主意。'},
+    ]},
+  ]},
+]},
+{id:'us1',icon:'cat',name:'日常大道（Band 5）',desc:'每天都用得到的字，先變成反射動作',chapters:[
+  vocabCh('e4','日常動詞','日常貓貓','cat',[
+    ve('commute','v. 通勤','通勤','commute to work；名詞 a long commute＝很長的通勤。'),
+    ve('afford','v. 負擔得起','負擔得起','固定用 can / cannot afford to + 原形動詞。'),
+    ve('borrow','v. 借入','借（進來）','borrow from 是借進來，lend to 是借出去，雅思常考。'),
+    ve('deliver','v. 遞送','遞送','deliver a parcel／deliver a speech 都通。'),
+    ve('recommend','v. 推薦','推薦','recommend doing 或 recommend that + 子句，不可 recommend me to。'),
+    ve('avoid','v. 避免','避免','後面永遠接動名詞：avoid eating late.'),
+    ve('manage','v. 設法完成','設法做到','manage to do＝好不容易做到，口說一講就加分。'),
+    ve('remind','v. 提醒','提醒','remind sb to do／remind sb of sth。'),
+  ]),
+  phraseCh('e5','日常動詞・造句','造句貓貓','cat',[
+    pe('I commute to the office by train every day.','我每天搭火車通勤上班','commute by + 交通工具。'),
+    pe('I cannot afford to eat out every night.','我沒辦法每晚都外食','afford to + 原形。'),
+    pe('Could I borrow your charger for a second?','可以跟你借一下充電器嗎？','for a second＝一下下，很口語。'),
+    pe('I would recommend booking the ticket in advance.','我會建議提早訂票','recommend + 動名詞。'),
+    pe('I try to avoid drinking coffee after six.','我盡量避免六點後喝咖啡','avoid + 動名詞。'),
+    pe('Please remind me to call the landlord tonight.','請提醒我今晚打給房東','remind sb to do。'),
+  ]),
+  vocabCh('e6','生活形容詞','形容小鳥','bird',[
+    ve('convenient','adj. 方便的','方便的','形容事物或時間，不能拿來形容人。'),
+    ve('affordable','adj. 價格實惠的','負擔得起的','比 cheap 有質感，寫作口說都安全。'),
+    ve('crowded','adj. 擁擠的','擁擠的','crowded with tourists＝擠滿觀光客。'),
+    ve('exhausted','adj. 精疲力盡的','累壞了','極端形容詞，前面配 absolutely 而不是 very。'),
+    ve('reliable','adj. 可靠的','可靠的','a reliable source＝可靠的來源，閱讀高頻。'),
+    ve('stressful','adj. 壓力大的','有壓力的','事情用 stressful，人用 stressed，考試常挖這個洞。'),
+    ve('flexible','adj. 有彈性的','彈性的','flexible working hours＝彈性工時。'),
+    ve('spacious','adj. 寬敞的','寬敞的','描述房間地點的高分字，取代 big。'),
+  ]),
+  phraseCh('e7','生活形容詞・造句','造句小鳥','bird',[
+    pe('The flat is small but very convenient for work.','這間公寓很小但上班很方便','convenient for + 目的。'),
+    pe('I am looking for affordable accommodation near campus.','我在找學校附近價格實惠的住宿','accommodation 不可數。'),
+    pe('The train is always crowded during rush hour.','火車在尖峰時段總是很擠','rush hour＝尖峰時段。'),
+    pe('I was absolutely exhausted after the flight.','下飛機後我整個累垮了','absolutely + 極端形容詞。'),
+    pe('My job is quite stressful, so I go running.','我的工作壓力滿大的，所以我去跑步','事情 stressful。'),
+    pe('The room is bright and surprisingly spacious.','房間明亮而且意外地寬敞','Part 2 描述房間的萬用句。'),
+  ]),
+  vocabCh('e8','都市生活','街頭狐狸','fox',[
+    ve('neighbourhood','n. 社區','住宅區','英式 neighbourhood、美式 neighborhood，雅思兩種都算對。'),
+    ve('facility','n. 設施','設施','幾乎都用複數：sports facilities。'),
+    ve('accommodation','n. 住宿','住宿','不可數！不能加 s，這是雅思最常見的錯誤之一。'),
+    ve('appliance','n. 家電','家電用品','household appliances＝家電。'),
+    ve('utility','n. 水電瓦斯','公用事業費用','Utilities are not included＝不含水電。'),
+    ve('pedestrian','n. 行人','行人','pedestrian zone＝行人徒步區，城市題必備。'),
+    ve('congestion','n. 壅塞','交通壅塞','traffic congestion，Task 2 交通題核心字。'),
+    ve('suburb','n. 郊區','市郊','in the suburbs＝住在郊區。'),
+  ]),
+  phraseCh('e9','都市生活・造句','造句狐狸','fox',[
+    pe('I live in a quiet neighbourhood in the suburbs.','我住在郊區一個安靜的社區','in the suburbs 要加 the。'),
+    pe('The building has excellent sports facilities.','這棟大樓有很棒的運動設施','facilities 用複數。'),
+    pe('Accommodation in this city is extremely expensive.','這座城市的住宿非常貴','accommodation 不可數，動詞用單數。'),
+    pe('The rent does not include utilities.','房租不含水電','很實用的租屋句。'),
+    pe('Traffic congestion has become a serious problem.','交通壅塞已成為嚴重問題','Task 2 開頭句骨架。'),
+    pe('The city centre is closed to cars and open to pedestrians.','市中心禁止汽車進入，開放給行人','closed to／open to 對比。'),
+  ]),
+]},
+{id:'us2',icon:'bird',name:'校園小鎮（Band 5.5）',desc:'聽力 Section 4 與口說 Part 1 的地盤',chapters:[
+  vocabCh('e10','課堂與作業','課堂小鳥','bird',[
+    ve('assignment','n. 作業','指派作業','hand in / submit an assignment＝交作業。'),
+    ve('lecture','n. 大堂課','講課','attend a lecture；聽力 Section 4 整段就是 lecture。'),
+    ve('tutorial','n. 小班討論課','輔導課','英國大學制度，聽力場景常考。'),
+    ve('deadline','n. 截止期限','截止日','meet the deadline／miss the deadline。'),
+    ve('semester','n. 學期','學期','美式 semester，英式 term。'),
+    ve('handout','n. 講義','課堂講義','聽力校園場景高頻字。'),
+    ve('revise','v. 複習；修訂','複習／修改','英式 revise for an exam＝準備考試，別誤會成只是修改。'),
+    ve('submit','v. 繳交','提交','submit online 比 hand in 正式。'),
+  ]),
+  phraseCh('e11','課堂與作業・造句','造句小鳥','bird',[
+    pe('The assignment is due at the end of the semester.','這份作業學期末截止','be due＝到期。'),
+    pe('I have to submit my essay before Friday.','我必須在週五前交報告','submit + 時間。'),
+    pe('Could I have a copy of the handout?','可以給我一份講義嗎？','校園場景實用句。'),
+    pe('I always struggle to meet the deadline.','我總是很難趕上截止日','struggle to do＝很吃力地做。'),
+    pe('I spend most weekends revising for exams.','我大部分週末都在準備考試','revise for＝為…複習。'),
+    pe('The lecture was cancelled and moved to next week.','那堂課取消了，改到下週','被動語態實用練習。'),
+  ]),
+  vocabCh('e12','描述人物','人物貓貓','cat',[
+    ve('outgoing','adj. 外向的','外向的','比 friendly 更精準地描述個性。'),
+    ve('supportive','adj. 支持的','很挺人的','a supportive friend＝很挺你的朋友。'),
+    ve('down-to-earth','adj. 務實的','腳踏實地的','形容人不做作、好相處，口說一講就加分。'),
+    ve('easy-going','adj. 隨和的','隨和的','跟 outgoing 不同，這是指好相處不計較。'),
+    ve('ambitious','adj. 有企圖心的','有野心的','中性偏正面，描述同事同學很好用。'),
+    ve('generous','adj. 慷慨的','大方的','generous with his time＝很願意花時間幫人。'),
+    ve('stubborn','adj. 固執的','固執的','負面特質題必備，as stubborn as a mule。'),
+    ve('considerate','adj. 體貼的','設想周到的','比 kind 精準，指會替人著想。'),
+  ]),
+  phraseCh('e13','描述人物・造句','造句貓貓','cat',[
+    pe('She is very outgoing and makes friends easily.','她很外向，很容易交到朋友','Part 2 描述人物的起手式。'),
+    pe('My father is down-to-earth and never shows off.','我爸很務實，從不炫耀','show off＝炫耀。'),
+    pe('He is easy-going, so he rarely gets angry.','他很隨和，所以很少生氣','rarely 放在動詞前。'),
+    pe('My best friend has always been supportive of my choices.','我最好的朋友一直支持我的選擇','be supportive of。'),
+    pe('She is ambitious but never steps on anyone.','她有企圖心，但從不踩著別人往上爬','轉折讓人物立體。'),
+    pe('He is stubborn, which can be both good and bad.','他很固執，這有好也有壞','which 引導評論子句，Band 7 語法。'),
+  ]),
+  {id:'e14',name:'校園咖啡店',kind:'talk',npc:{name:'學姊 Chloe',sprite:'cat'},steps:[
+    {jp:'Hi! You must be the new exchange student. I am Chloe.',zh:'嗨！你一定是新來的交換生吧，我是 Chloe',ch:[
+      {jp:'Yes, that is me. Nice to meet you, Chloe.',zh:'對，就是我，很高興認識你',ok:1},
+      {jp:'Yes, I am the new exchange student and I am from Taiwan and I study business.',zh:'對我是新來的交換生我來自台灣我念商學',why:'一次倒完所有資訊會讓對話斷掉，先簡答再讓對方問。'},
+      {jp:'Who are you?',zh:'你是誰？',why:'對方已經自我介紹了，這樣反問很沒禮貌。'},
+    ]},
+    {jp:'How are you finding the course so far?',zh:'到目前為止你覺得課程如何？',ch:[
+      {jp:'It is challenging, but I am really enjoying it.',zh:'滿有挑戰的，但我很享受',ok:1},
+      {jp:'I am finding it.',zh:'我正在找它',why:'How are you finding X 是「你覺得 X 如何」，不是真的在找東西。'},
+      {jp:'Yes, please.',zh:'好的，麻煩了',why:'這不是 yes/no 問句。'},
+    ]},
+    {jp:'Do you fancy grabbing a coffee after the lecture?',zh:'下課後要不要去喝杯咖啡？',ch:[
+      {jp:'I would love to. Where shall we meet?',zh:'我很樂意，我們約哪裡？',ok:1},
+      {jp:'No.',zh:'不要',why:'單一個 No 太生硬，婉拒也要加理由：Sorry, I have a tutorial.'},
+      {jp:'I do not fancy you.',zh:'我對你沒興趣',why:'fancy doing＝想做某事，fancy someone 才是喜歡某人，誤用會很尷尬。'},
+    ]},
+    {jp:'Great, see you at the library entrance at four!',zh:'太好了，四點圖書館門口見！',ch:[
+      {jp:'Perfect, see you then.',zh:'太好了，到時見',ok:1},
+      {jp:'See you yesterday.',zh:'昨天見',why:'時間邏輯錯誤。'},
+      {jp:'I am lost.',zh:'我迷路了',why:'現在還沒出發，話題接不上。'},
+    ]},
+  ]},
+]},
+{id:'us3',icon:'fox',name:'求職街（Band 6）',desc:'工作題是口說與寫作的常客',chapters:[
+  vocabCh('e15','職場字彙','職場狐狸','fox',[
+    ve('colleague','n. 同事','同事','比 workmate 正式，寫作口說都安全。'),
+    ve('promotion','n. 升遷','升職','get a promotion；也可以指商品促銷。'),
+    ve('workload','n. 工作量','工作量','a heavy workload＝工作量大。'),
+    ve('overtime','n. 加班','加班','work overtime，不可數也不加 s。'),
+    ve('salary','n. 月薪','薪水','按月固定領叫 salary，按時計叫 wage。'),
+    ve('shift','n. 輪班','班別','night shift＝夜班，work in shifts＝輪班。'),
+    ve('freelance','adj. 接案的','自由接案','work freelance＝接案工作，名詞是 freelancer。'),
+    ve('productivity','n. 生產力','生產力','boost productivity＝提升生產力，Task 2 高頻。'),
+  ]),
+  phraseCh('e16','職場字彙・造句','造句狐狸','fox',[
+    pe('My colleagues are friendly and very easy to work with.','我的同事很友善也很好合作','easy to work with 是道地搭配。'),
+    pe('He was offered a promotion after just one year.','他才做一年就獲得升遷','be offered a promotion 被動。'),
+    pe('I have a heavy workload at the moment.','我目前工作量很大','heavy workload 固定搭配。'),
+    pe('I often have to work overtime at the end of the month.','我月底常常得加班','work overtime 不加介系詞。'),
+    pe('Flexible hours can significantly boost productivity.','彈性工時可以顯著提升生產力','Task 2 可直接用。'),
+    pe('I would rather work freelance than for a big company.','我寧願接案也不要待大公司','would rather A than B。'),
+  ]),
+  vocabCh('e17','面試與履歷','面試幽靈','ghost',[
+    ve('applicant','n. 應徵者','申請人','apply → applicant → application，一家人一起背。'),
+    ve('qualification','n. 資格','學經歷資格','幾乎都用複數 qualifications。'),
+    ve('recruit','v. 招募','招募','名詞 recruitment＝招募活動。'),
+    ve('candidate','n. 人選','候選人','the ideal candidate＝理想人選。'),
+    ve('CV','n. 履歷表','履歷','英式 CV，美式 resume，雅思用 CV 最安全。'),
+    ve('internship','n. 實習','實習','do an internship＝實習。'),
+    ve('reference','n. 推薦人','推薦人／參考文獻','求職與論文兩種意思都會考。'),
+    ve('negotiate','v. 協商','談判','negotiate a salary＝談薪水。'),
+  ]),
+  phraseCh('e18','面試與履歷・造句','造句幽靈','ghost',[
+    pe('There were over two hundred applicants for the post.','這個職位有超過兩百人應徵','post＝職缺，英式用法。'),
+    pe('She has all the qualifications we are looking for.','她具備我們要找的所有資格','look for 進行式表示正在找。'),
+    pe('The company is recruiting graduates this autumn.','公司今年秋天在招募新鮮人','recruit 及物動詞。'),
+    pe('I did a six-month internship at a design studio.','我在一間設計工作室實習了六個月','six-month 當形容詞不加 s。'),
+    pe('Please send your CV and two references.','請寄履歷與兩位推薦人','求職信標準句。'),
+    pe('I managed to negotiate a higher starting salary.','我成功談到更高的起薪','manage to 呼應前面學過的字。'),
+  ]),
+  {id:'e19',name:'面試現場',kind:'talk',npc:{name:'面試官 Ms. Baker',sprite:'oni'},steps:[
+    {jp:'Thanks for coming in. Tell me a little about yourself.',zh:'謝謝你來，請簡單自我介紹一下',ch:[
+      {jp:'I am a marketing graduate with two years of experience in digital advertising.',zh:'我是行銷系畢業，有兩年數位廣告經驗',ok:1},
+      {jp:'I was born in 1998 and I have two brothers.',zh:'我 1998 年出生，有兩個哥哥',why:'面試的 tell me about yourself 問的是專業背景，不是身家調查。'},
+      {jp:'It is on my CV.',zh:'履歷上有寫',why:'把問題丟回去，等於放棄這一題。'},
+    ]},
+    {jp:'What would you say is your greatest weakness?',zh:'你認為自己最大的弱點是什麼？',ch:[
+      {jp:'I tend to take on too much, so I am learning to delegate.',zh:'我容易攬太多事，所以正在學著分工',ok:1},
+      {jp:'I do not have any weaknesses.',zh:'我沒有任何弱點',why:'零自覺是面試最大的紅旗。'},
+      {jp:'I am always late and I hate meetings.',zh:'我老是遲到而且討厭開會',why:'誠實過頭等於自爆，弱點要挑可改善的。'},
+    ]},
+    {jp:'Why do you want to work for us?',zh:'你為什麼想來我們公司？',ch:[
+      {jp:'Your work on sustainable packaging is exactly the area I want to grow in.',zh:'貴公司在永續包裝的成果正是我想發展的領域',ok:1},
+      {jp:'Because I need a job.',zh:'因為我需要工作',why:'誰都需要工作，這句話沒有提供任何資訊。'},
+      {jp:'Because the salary is high.',zh:'因為薪水高',why:'薪資可以談，但不能當成唯一動機。'},
+    ]},
+    {jp:'Do you have any questions for us?',zh:'你有什麼問題想問我們嗎？',ch:[
+      {jp:'Yes, how would you describe the team culture here?',zh:'有的，您會怎麼形容這裡的團隊文化？',ok:1},
+      {jp:'No, nothing at all.',zh:'沒有，完全沒有',why:'一個問題都沒有，會被解讀成沒興趣。'},
+      {jp:'When can I take my first holiday?',zh:'我什麼時候可以休第一次假？',why:'還沒錄取就先問放假，時機錯了。'},
+    ]},
+  ]},
+]},
+{id:'us4',icon:'ghost',name:'口說劇場（Band 6）',desc:'Part 2 的兩分鐘，靠的是形容詞與拖延術',chapters:[
+  vocabCh('e20','描述地點','地景幽靈','ghost',[
+    ve('vibrant','adj. 充滿活力的','熱鬧有活力的','a vibrant city，Part 2 描述城市的神字。'),
+    ve('bustling','adj. 熙來攘往的','人聲鼎沸的','a bustling market＝很熱鬧的市場。'),
+    ve('tranquil','adj. 寧靜的','寧靜的','取代 quiet，描述湖邊鄉間。'),
+    ve('scenic','adj. 風景優美的','景色好的','a scenic route＝景觀路線。'),
+    ve('landmark','n. 地標','地標','a famous landmark。'),
+    ve('atmosphere','n. 氛圍','氣氛','a relaxing atmosphere＝放鬆的氛圍。'),
+    ve('overlook','v. 俯瞰；忽略','俯瞰／忽略','兩個意思都考：overlook the sea／overlook a detail。'),
+    ve('renovate','v. 翻新','整修','recently renovated＝最近翻修過。'),
+  ]),
+  phraseCh('e21','描述地點・造句','造句幽靈','ghost',[
+    pe('It is a vibrant city with a great nightlife.','那是個很有活力、夜生活很棒的城市','with 片語擴充句子最快。'),
+    pe('The old town is full of bustling street markets.','舊城區到處是熱鬧的街市','be full of。'),
+    pe('I go there whenever I need somewhere tranquil.','每當我需要安靜的地方就會去那裡','whenever 引導時間子句。'),
+    pe('The hotel room overlooks a beautiful bay.','旅館房間俯瞰著美麗的海灣','overlook 不加介系詞。'),
+    pe('The building was renovated a couple of years ago.','那棟建築幾年前翻修過','被動＋時間。'),
+    pe('What I like most is the relaxing atmosphere.','我最喜歡的是那放鬆的氛圍','What 子句當主詞，Band 7 句型。'),
+  ]),
+  vocabCh('e22','意見與程度','程度幽靈','ghost',[
+    ve('reckon','v. 認為','我覺得','英式口語 I reckon＝I think，口說用很自然。'),
+    ve('slightly','adv. 稍微','稍微','slightly more expensive，Task 1 也常用。'),
+    ve('fairly','adv. 還算','相當','程度低於 very，口說很常見。'),
+    ve('absolutely','adv. 完全地','絕對','只配極端形容詞：absolutely exhausted。'),
+    ve('barely','adv. 幾乎不','幾乎沒有','barely enough time＝時間幾乎不夠。'),
+    ve('particularly','adv. 尤其','特別是','not particularly＝不太，最好用的婉轉否定。'),
+    ve('personally','adv. 就我個人','個人而言','Personally, I would say... 開頭超好用。'),
+    ve('genuinely','adv. 真心地','由衷地','genuinely interested＝真的有興趣，比 really 高級。'),
+  ]),
+  phraseCh('e23','意見與程度・造句','造句幽靈','ghost',[
+    pe('Personally, I reckon it depends on the situation.','就我個人而言，我覺得要看情況','萬用的模糊立場句。'),
+    pe('It is fairly common in my country.','這在我國家還算常見','fairly 降低絕對度。'),
+    pe('I am not particularly keen on team sports.','我不太喜歡團體運動','not particularly keen on＝婉轉的不喜歡。'),
+    pe('I was absolutely amazed by the view.','那景色讓我完全驚呆了','absolutely + 極端形容詞。'),
+    pe('I barely had time to eat that day.','那天我幾乎沒時間吃飯','barely 本身已是否定。'),
+    pe('It has become slightly more expensive over the years.','這些年來變得稍微貴了一點','slightly + 比較級。'),
+  ]),
+  phraseCh('e24','拖延與換句話說','救場幽靈','ghost',[
+    pe('That is a good question, let me think for a second.','這問題不錯，讓我想一下','爭取思考時間，考官不會扣分。'),
+    pe("Off the top of my head, I'd say around ten.",'我一時想到的大概是十個','面對數字題不確定時的護身句。'),
+    pe('What I mean is, it is not that simple.','我的意思是，事情沒那麼單純','自我修正，展現 paraphrase 能力。'),
+    pe('To put it another way, money is not everything.','換句話說，錢不是一切','換句話說＝加分點。'),
+    pe('I have never really thought about it, but I suppose so.','我沒真的想過，不過我猜是吧','沒想法時也要說滿。'),
+    pe('As far as I know, it is still quite rare.','就我所知，這還相當少見','不確定資訊時的安全前綴。'),
+    pe('It is hard to say, but probably in the summer.','很難說，但大概是夏天','先承認難答，再給答案。'),
+  ]),
+]},
+{id:'us5',icon:'oni',name:'圖表高地（Band 6.5）',desc:'Writing Task 1：讓數字自己說話',chapters:[
+  vocabCh('e25','趨勢動詞','趨勢鬼','oni',[
+    ve('soar','v. 飆升','急速上升','本身已含「劇烈」，不必再加 dramatically。'),
+    ve('plummet','v. 暴跌','急速下降','soar 的反義詞，Task 1 高分字。'),
+    ve('fluctuate','v. 波動','起伏不定','fluctuate between A and B。'),
+    ve('plateau','v. 進入高原期','持平','level off 的高階版本，也可當名詞。'),
+    ve('peak','v. 達到高峰','高峰','peak at 40%＝在 40% 達到高峰。'),
+    ve('decline','v. 下降','下滑','比 decrease 正式，可當名詞：a sharp decline。'),
+    ve('surge','n. 激增','劇增','a surge in demand＝需求激增。'),
+    ve('stabilise','v. 趨於穩定','穩定下來','英式 -ise、美式 -ize 都算對。'),
+  ]),
+  phraseCh('e26','趨勢動詞・造句','造句鬼','oni',[
+    pe('The number of visitors soared from 20,000 to 50,000.','參觀人數從兩萬飆升到五萬','from A to B 是 Task 1 骨架。'),
+    pe('Sales plummeted in the second quarter.','銷售在第二季暴跌','plummet 不需再加副詞。'),
+    pe('The figure fluctuated between 30 and 40 percent.','數字在三成到四成之間波動','the figure 取代重複的名詞。'),
+    pe('Prices peaked at 120 dollars before levelling off.','價格在 120 美元見頂後趨於平緩','before + 動名詞連接兩段趨勢。'),
+    pe('There was a steady decline in car ownership.','汽車持有率穩定下降','There was a + 形容詞 + 名詞的變化句型。'),
+    pe('The chart shows a surge in energy consumption after 2010.','圖表顯示 2010 年後能源消耗激增','a surge in。'),
+  ]),
+  vocabCh('e27','幅度與比例','數據鬼','oni',[
+    ve('dramatically','adv. 大幅地','劇烈地','搭配 increase／fall，Task 1 主力副詞。'),
+    ve('steadily','adv. 穩定地','平穩地','形容持續而不劇烈的變化。'),
+    ve('marginally','adv. 些微地','微幅地','取代 a little，正式度高一階。'),
+    ve('respectively','adv. 分別地','分別','A and B were 20% and 30% respectively，放句尾。'),
+    ve('approximately','adv. 大約','約','取代 about，學術寫作首選。'),
+    ve('proportion','n. 比例','比例','the proportion of X＝X 所佔比例。'),
+    ve('threefold','adv. 三倍','增為三倍','increase threefold＝成長為三倍。'),
+    ve('minority','n. 少數','少數','a small minority of people，反義是 majority。'),
+  ]),
+  phraseCh('e28','幅度與比例・造句','造句鬼','oni',[
+    pe('The figure rose dramatically between 2000 and 2005.','該數字在 2000 到 2005 年間大幅上升','between A and B 表期間。'),
+    pe('Numbers increased steadily throughout the period.','數字在整段期間穩定成長','throughout the period 是 Task 1 常客。'),
+    pe('The proportion of women rose marginally to 34 percent.','女性比例微幅上升到 34%','rise to + 數值。'),
+    pe('The figures for France and Japan were 25 and 30 percent respectively.','法國與日本的數字分別是 25% 與 30%','respectively 放句尾。'),
+    pe('Approximately one third of households owned a car.','約三分之一的家戶擁有汽車','one third 分數寫法。'),
+    pe('Only a small minority chose to travel by bus.','只有極少數人選擇搭公車','a small minority 當主詞。'),
+  ]),
+  phraseCh('e29','圖表句型','圖表魔王','dragon',[
+    pe('The chart illustrates the proportion of households with internet access.','此圖表說明有網路的家戶比例','illustrate 取代 show，開頭句必備。'),
+    pe('Overall, the most striking feature is the steady rise in demand.','整體而言，最顯著的特徵是需求穩定上升','Overall 段是拿分關鍵，不能省。'),
+    pe('The figure for men was almost twice as high as that for women.','男性的數字幾乎是女性的兩倍','that for 用來避免重複名詞。'),
+    pe('While sales rose in Asia, they fell slightly in Europe.','亞洲銷售上升，歐洲則略為下滑','while 做對比，一句吃兩個數據。'),
+    pe('By contrast, the number of rural residents remained stable.','相較之下，鄉村居民人數維持穩定','By contrast 開頭要加逗號。'),
+    pe('In 2020, the figure stood at just over 60 percent.','2020 年該數字略高於六成','stand at 取代 was，語域更高。'),
+    pe('The two categories followed a similar trend over the period.','這兩個類別在這段期間走勢相近','follow a trend 固定搭配。'),
+  ]),
+]},
+{id:'us6',icon:'fox',name:'論證議會（Band 7）',desc:'Writing Task 2：立場、讓步、反駁',chapters:[
+  vocabCh('e30','連接與轉折','連接狐狸','fox',[
+    ve('nevertheless','adv. 儘管如此','然而','句首＋逗號，用來換掉重複的 however。'),
+    ve('furthermore','adv. 此外','再者','加強同向論點，比 also 正式。'),
+    ve('consequently','adv. 因此','結果','因果連接，比 so 正式很多。'),
+    ve('whereas','conj. 然而','反之','連接兩個對比子句，Task 1 對比也能用。'),
+    ve('albeit','conj. 儘管','雖然','albeit + 形容詞片語，Band 8 語感。'),
+    ve('in light of','phr. 有鑑於','鑑於','in light of recent evidence。'),
+    ve('by and large','phr. 大體上','整體而言','取代 generally，口說寫作都行。'),
+    ve('conversely','adv. 相反地','反過來說','引出完全相反的情況。'),
+  ]),
+  phraseCh('e31','連接與轉折・造句','造句狐狸','fox',[
+    pe('The plan is expensive. Nevertheless, it is necessary.','這計畫很貴，儘管如此仍有必要','Nevertheless 後面加逗號。'),
+    pe('Furthermore, remote work reduces commuting costs.','此外，遠距工作能減少通勤成本','段落第二個論點的開頭。'),
+    pe('Fuel prices rose and consequently fewer people drove.','油價上漲，因此開車的人變少','consequently 放在動詞前也可以。'),
+    pe('Urban areas are crowded, whereas rural areas are emptying.','都市擁擠，反之鄉村正在空洞化','whereas 連接兩個完整子句。'),
+    pe('The policy was effective, albeit expensive.','這政策雖然昂貴但有效','albeit + 形容詞，不接子句。'),
+    pe('By and large, the benefits outweigh the costs.','整體而言，效益大於成本','結論段常用開頭。'),
+  ]),
+  vocabCh('e32','論證動詞','論證狐狸','fox',[
+    ve('advocate','v. 主張','提倡','advocate doing 或 advocate for，立場句核心。'),
+    ve('undermine','v. 削弱','損害','undermine an argument＝削弱論點。'),
+    ve('mitigate','v. 減輕','緩解','mitigate the impact＝減輕衝擊。'),
+    ve('exacerbate','v. 加劇','使惡化','mitigate 的反義，Band 8 用字。'),
+    ve('attribute','v. 歸因於','把…歸因於','attribute A to B，被動 be attributed to。'),
+    ve('justify','v. 證明正當','為…辯護','justify the cost＝證明這筆錢值得。'),
+    ve('outweigh','v. 大於','勝過','Do the advantages outweigh the disadvantages 就是考題本身。'),
+    ve('implement','v. 實施','推行','implement a policy＝推行政策。'),
+  ]),
+  phraseCh('e33','論證動詞・造句','造句狐狸','fox',[
+    pe('Many experts advocate raising the retirement age.','許多專家主張提高退休年齡','advocate + 動名詞。'),
+    pe('Such policies could undermine public trust.','這類政策可能損害公眾信任','could 降低絕對性。'),
+    pe('Planting trees can mitigate the effects of pollution.','種樹可以減輕污染的影響','mitigate the effects of。'),
+    pe('Cutting funding would only exacerbate the problem.','刪減經費只會讓問題惡化','would only 強調反效果。'),
+    pe('The decline is often attributed to poor management.','這個下滑常被歸因於管理不善','被動用法最常考。'),
+    pe('The benefits clearly outweigh the drawbacks.','好處明顯大於壞處','結論段的定型句。'),
+  ]),
+  phraseCh('e34','讓步與反駁','議會魔王','dragon',[
+    pe('It is often argued that technology isolates people.','人們常主張科技使人疏離','中立地引入對立觀點。'),
+    pe('Admittedly, this approach has some drawbacks.','誠然，這個做法有些缺點','讓步句是 Band 7 的結構特徵。'),
+    pe('However, this argument overlooks one crucial point.','然而這個論點忽略了一個關鍵','呼應前面學過的 overlook。'),
+    pe('There is compelling evidence to suggest otherwise.','有強力證據顯示並非如此','compelling evidence 高階搭配。'),
+    pe('While I accept that costs may rise, the benefits are greater.','雖然我同意成本可能上升，但效益更大','While 讓步＋主句立場。'),
+    pe('This is largely because of a lack of long-term planning.','這主要是因為缺乏長期規劃','largely 弱化絕對性。'),
+    pe('For this reason, I firmly believe governments should intervene.','基於此，我堅信政府應該介入','結論句表明立場。'),
+  ]),
+]},
+{id:'us7',icon:'ghost',name:'學術圖書館（Band 7）',desc:'閱讀與寫作共用的學術字彙核心',chapters:[
+  vocabCh('e35','學術核心・壹','書庫幽靈','ghost',[
+    ve('significant','adj. 顯著的','重大的','a significant increase；學術第一高頻形容詞。'),
+    ve('approach','n. 方法','做法','a new approach to the problem，介系詞用 to。'),
+    ve('evidence','n. 證據','證據','不可數，不能說 an evidence／evidences。'),
+    ve('analyse','v. 分析','分析','英式 analyse、美式 analyze，名詞 analysis。'),
+    ve('factor','n. 因素','因素','a key factor in success。'),
+    ve('assume','v. 假定','假設','名詞 assumption，閱讀推論題常考。'),
+    ve('derive','v. 源自','衍生','be derived from＝源自於。'),
+    ve('phenomenon','n. 現象','現象','複數是 phenomena，考題愛挖這個洞。'),
+  ]),
+  phraseCh('e36','學術核心・壹・造句','造句幽靈','ghost',[
+    pe('There has been a significant rise in online learning.','線上學習有了顯著成長','現在完成式描述至今的變化。'),
+    pe('This approach to language teaching is relatively new.','這種語言教學法相對新穎','approach to。'),
+    pe('There is little evidence to support this claim.','幾乎沒有證據支持這個說法','little + 不可數。'),
+    pe('Researchers analysed data from over 3,000 students.','研究者分析了超過三千名學生的資料','analyse data 固定搭配。'),
+    pe('Cost is the main factor behind this decision.','成本是這個決定背後的主因','factor behind。'),
+    pe('Many people assume that money brings happiness.','許多人假定金錢帶來快樂','assume that 子句。'),
+  ]),
+  vocabCh('e37','學術核心・貳','書庫幽靈','ghost',[
+    ve('conduct','v. 進行','執行（研究）','conduct a survey／conduct research。'),
+    ve('emphasise','v. 強調','著重','名詞 emphasis：place emphasis on。'),
+    ve('constitute','v. 構成','組成','Women constitute 40% of the workforce.'),
+    ve('comprehensive','adj. 全面的','完整的','a comprehensive review＝全面的檢視。'),
+    ve('subsequent','adj. 後續的','隨後的','subsequent research＝後續研究。'),
+    ve('inevitable','adj. 不可避免的','必然的','It is inevitable that...'),
+    ve('substantial','adj. 相當大的','可觀的','取代 big，學術寫作首選。'),
+    ve('feasible','adj. 可行的','行得通的','a feasible solution。'),
+  ]),
+  phraseCh('e38','學術核心・貳・造句','造句幽靈','ghost',[
+    pe('The team conducted a survey of 500 households.','團隊對五百戶家庭進行了調查','conduct a survey of。'),
+    pe('The report emphasises the need for clean energy.','報告強調對乾淨能源的需求','emphasise 後面不加 on。'),
+    pe('Students constitute the majority of our customers.','學生構成我們大多數的顧客','constitute 不用被動。'),
+    pe('We need a more comprehensive solution to this issue.','我們需要更全面的解決方案','solution to。'),
+    pe('Subsequent studies confirmed these findings.','後續研究證實了這些發現','findings 常用複數。'),
+    pe('Building more roads is simply not feasible.','蓋更多道路根本不可行','simply 加強否定。'),
+  ]),
+  vocabCh('e39','名詞化高階','書庫魔王','dragon',[
+    ve('implementation','n. 實施','執行','implement → implementation，名詞化直接拉高語域。'),
+    ve('reliance','n. 依賴','倚賴','reliance on fossil fuels。'),
+    ve('exposure','n. 接觸','暴露','exposure to English＝接觸英文。'),
+    ve('emergence','n. 興起','出現','the emergence of social media。'),
+    ve('disparity','n. 落差','差距','the disparity between rich and poor。'),
+    ve('incentive','n. 誘因','動機','financial incentives＝經濟誘因。'),
+    ve('infrastructure','n. 基礎建設','基礎建設','不可數，交通與城市題必備。'),
+    ve('legislation','n. 法規','立法','不可數，取代 laws 更正式。'),
+  ]),
+  phraseCh('e40','名詞化高階・造句','造句魔王','dragon',[
+    pe('The implementation of the policy took three years.','這項政策的實施花了三年','把動詞改名詞，句子瞬間學術化。'),
+    pe('Our reliance on cars has increased dramatically.','我們對汽車的依賴大幅增加','reliance on。'),
+    pe('Early exposure to a second language is beneficial.','及早接觸第二語言是有益的','exposure to。'),
+    pe('The emergence of remote work has changed cities.','遠距工作的興起改變了城市','the emergence of。'),
+    pe('There is a huge disparity between urban and rural incomes.','城鄉所得存在巨大落差','disparity between。'),
+    pe('Governments should offer incentives for green energy.','政府應為綠能提供誘因','offer incentives for。'),
+  ]),
+]},
+{id:'us8',icon:'cat',name:'片語動詞巷（Band 7.5）',desc:'考官真正想聽到的道地感',chapters:[
+  vocabCh('e41','高頻片語動詞','巷口貓貓','cat',[
+    ve('put up with','phr. 忍受','忍受','tolerate 的口語版，口說用最自然。'),
+    ve('come up with','phr. 想出','提出（點子）','come up with a solution。'),
+    ve('carry out','phr. 執行','進行','carry out research，寫作也能安全使用。'),
+    ve('cut down on','phr. 減少','減少（用量）','cut down on sugar／screen time。'),
+    ve('look into','phr. 調查','研究','investigate 的日常版本。'),
+    ve('bring about','phr. 帶來','導致','bring about change＝帶來改變。'),
+    ve('get by','phr. 勉強度日','將就過活','get by on a low income。'),
+    ve('take up','phr. 開始從事','培養（嗜好）','take up yoga；也可指佔用空間。'),
+  ]),
+  phraseCh('e42','高頻片語動詞・造句','造句貓貓','cat',[
+    pe('I cannot put up with the noise any longer.','我再也受不了這噪音','not any longer＝再也不。'),
+    pe('She came up with a brilliant idea.','她想出了一個很棒的點子','come up with + 名詞。'),
+    pe('The university carried out a study on sleep.','該大學進行了一項睡眠研究','carry out a study on。'),
+    pe('I am trying to cut down on takeaway food.','我正試著減少吃外食','cut down on + 名詞。'),
+    pe('The council is looking into the complaints.','市議會正在調查這些投訴','look into 進行式。'),
+    pe('Technology has brought about huge social change.','科技帶來了巨大的社會變遷','bring about + 抽象名詞。'),
+  ]),
+  vocabCh('e43','道地搭配','搭配貓貓','cat',[
+    ve('make progress','phr. 取得進展','有進步','不能說 do progress，搭配題常考。'),
+    ve('take responsibility','phr. 負起責任','承擔責任','take responsibility for。'),
+    ve('raise awareness','phr. 提高意識','喚起關注','raise awareness of climate change。'),
+    ve('meet the demand','phr. 滿足需求','應付需求','supply meets demand。'),
+    ve('play a vital role','phr. 扮演關鍵角色','起重要作用','Task 2 的萬用句骨架。'),
+    ve('pose a threat','phr. 構成威脅','造成威脅','pose a threat to。'),
+    ve('strike a balance','phr. 取得平衡','拿捏平衡','strike a balance between A and B。'),
+    ve('bridge the gap','phr. 弭平差距','縮小落差','bridge the gap between。'),
+  ]),
+  phraseCh('e44','道地搭配・造句','造句貓貓','cat',[
+    pe('I have made real progress in my speaking.','我的口說有了實質進步','make progress in。'),
+    pe('Parents should take responsibility for their children.','父母應該為孩子負起責任','take responsibility for。'),
+    pe('The campaign aims to raise awareness of recycling.','這場活動旨在提高回收意識','aim to do。'),
+    pe('Public transport plays a vital role in reducing pollution.','大眾運輸在減少污染上扮演關鍵角色','play a vital role in + 動名詞。'),
+    pe('Plastic waste poses a serious threat to marine life.','塑膠廢棄物對海洋生物構成嚴重威脅','pose a threat to。'),
+    pe('We must strike a balance between growth and the environment.','我們必須在成長與環境間取得平衡','strike a balance between。'),
+  ]),
+  {id:'e45',name:'看房與租屋',kind:'talk',npc:{name:'房仲 Danny',sprite:'fox'},steps:[
+    {jp:'So, this is the flat. What do you think of the layout?',zh:'這就是這間公寓，你覺得格局如何？',ch:[
+      {jp:'It is bright and surprisingly spacious.',zh:'很明亮，而且意外地寬敞',ok:1},
+      {jp:'It is very convenient person.',zh:'這是個很方便的人',why:'convenient 不能形容人，這裡也不是在講人。'},
+      {jp:'How much do you earn?',zh:'你賺多少？',why:'問房仲的收入是很失禮的越界問題。'},
+    ]},
+    {jp:'The rent is 1,200 a month. Does that work for you?',zh:'租金一個月 1200，這樣可以嗎？',ch:[
+      {jp:'Does that include utilities?',zh:'這有含水電嗎？',ok:1},
+      {jp:'Yes, I will take it right now.',zh:'好，我現在就要',why:'還沒問清楚費用與合約就成交，是租屋族最常見的坑。'},
+      {jp:'That is too cheap.',zh:'太便宜了',why:'嫌太便宜等於請對方漲價。'},
+    ]},
+    {jp:'Bills are extra. The contract is for twelve months.',zh:'帳單另計，合約是十二個月',ch:[
+      {jp:'Is there any flexibility on the contract length?',zh:'合約長度有彈性嗎？',ok:1},
+      {jp:'I do not sign anything.',zh:'我什麼都不簽',why:'不簽約就沒有法律保障，吃虧的是自己。'},
+      {jp:'Twelve months is a year?',zh:'十二個月是一年嗎？',why:'這樣問會讓對方懷疑你的英文與常識。'},
+    ]},
+    {jp:'I can ask the landlord about a six-month break clause.',zh:'我可以問問房東能不能加六個月的解約條款',ch:[
+      {jp:'That would be great. Could you let me know by Friday?',zh:'那太好了，可以在週五前回覆我嗎？',ok:1},
+      {jp:'No, thank you, I hate clauses.',zh:'不用了謝謝，我討厭條款',why:'break clause 是保護房客的條款，拒絕它等於放棄自己的權益。'},
+      {jp:'I will move in tonight.',zh:'我今晚就搬進來',why:'合約都還沒談完就搬，太急。'},
+    ]},
+  ]},
+]},
+{id:'us9',icon:'oni',name:'語域高塔（Band 7.5）',desc:'同一個意思，換更精準的說法',chapters:[
+  vocabCh('e46','學術語域','語域鬼','oni',[
+    ve('utilise','v. 利用','使用','use 的正式版，別整篇濫用會很生硬。'),
+    ve('demonstrate','v. 顯示','證明','The data demonstrate that...'),
+    ve('indicate','v. 指出','顯示','比 show 正式，Task 1 也能用。'),
+    ve('facilitate','v. 促進','使更容易','facilitate communication。'),
+    ve('allocate','v. 分配','撥出','allocate resources／funding。'),
+    ve('prioritise','v. 優先處理','優先','prioritise public transport。'),
+    ve('regulate','v. 規範','管制','名詞 regulation，政策題必備。'),
+    ve('compensate','v. 補償','彌補','compensate for the loss。'),
+  ]),
+  phraseCh('e47','學術語域・造句','造句鬼','oni',[
+    pe('The results indicate a clear link between the two.','結果顯示兩者間有明確關聯','a link between。'),
+    pe('This study demonstrates that early education matters.','本研究證明早期教育很重要','demonstrate that 子句。'),
+    pe('Technology can facilitate access to information.','科技能促進資訊的取得','access to。'),
+    pe('The government should allocate more funding to schools.','政府應撥更多經費給學校','allocate A to B。'),
+    pe('Cities need to prioritise cycling over driving.','城市應該把自行車放在開車之前','prioritise A over B。'),
+    pe('Nothing can compensate for the loss of natural habitats.','沒有什麼能彌補自然棲地的消失','compensate for。'),
+  ]),
+  vocabCh('e48','謹慎與限定','限定鬼','oni',[
+    ve('tend to','phr. 傾向於','往往會','避免絕對化，是 Band 7 的謹慎語氣。'),
+    ve('to some extent','phr. 在某種程度上','某種程度上','部分同意題型的救命片語。'),
+    ve('presumably','adv. 想必','推測是','表示有根據的推測。'),
+    ve('be likely to','phr. 很可能','有可能','取代 maybe，正式度高很多。'),
+    ve('a considerable number of','phr. 相當多的','為數不少的','取代 many，寫作立刻加分。'),
+    ve('by no means','phr. 絕非','絕不是','It is by no means clear＝這絕不清楚。'),
+    ve('with the exception of','phr. 除…之外','除…以外','Task 1 描述例外值的專用片語。'),
+    ve('in stark contrast','phr. 形成強烈對比','恰恰相反','in stark contrast to。'),
+  ]),
+  phraseCh('e49','謹慎與限定・造句','造句鬼','oni',[
+    pe('Younger people tend to spend more time online.','年輕人往往花更多時間上網','tend to + 原形。'),
+    pe('I agree with this view to some extent.','我在某種程度上同意這個觀點','部分同意的標準句。'),
+    pe('Such measures are likely to reduce traffic.','這類措施很可能減少車流','be likely to + 原形。'),
+    pe('A considerable number of students work part-time.','相當多學生在打工','後面接複數動詞。'),
+    pe('This is by no means a simple problem.','這絕不是個簡單的問題','by no means + 名詞片語。'),
+    pe('With the exception of Japan, all figures rose.','除了日本以外，所有數字都上升','Task 1 例外句。'),
+  ]),
+]},
+{id:'us10',icon:'dragon',name:'Band 8 魔王城',desc:'最後一哩：抽象、精準、帶著隱喻',chapters:[
+  vocabCh('e50','高階抽象名詞','語彙龍','dragon',[
+    ve('paradigm','n. 典範','範式','a paradigm shift＝典範轉移。'),
+    ve('scrutiny','n. 嚴格檢視','審視','come under scrutiny＝受到檢視。'),
+    ve('consensus','n. 共識','共識','reach a consensus on。'),
+    ve('nuance','n. 細微差別','微妙差異','形容理解很細緻時用。'),
+    ve('paradox','n. 悖論','矛盾之處','形容詞 paradoxical。'),
+    ve('trajectory','n. 發展軌跡','走向','an upward trajectory＝上升軌跡，Task 1 高階用法。'),
+    ve('backlash','n. 強烈反彈','反撲','a public backlash against。'),
+    ve('discourse','n. 論述','公共討論','public discourse＝公共討論。'),
+  ]),
+  phraseCh('e51','高階抽象名詞・造句','造句龍','dragon',[
+    pe('Remote work represents a genuine paradigm shift.','遠距工作代表了真正的典範轉移','represent 取代 is。'),
+    pe('The policy has come under intense scrutiny.','這項政策受到嚴格檢視','come under scrutiny。'),
+    pe('There is no consensus among researchers on this issue.','研究者對此議題並無共識','consensus among。'),
+    pe('The data suggest an upward trajectory over the decade.','數據顯示這十年呈上升軌跡','suggest 讓語氣謹慎。'),
+    pe('The decision provoked a public backlash.','這個決定引發了公眾強烈反彈','provoke a backlash。'),
+    pe('This has become central to public discourse.','這已成為公共討論的核心','be central to。'),
+  ]),
+  vocabCh('e52','高階形容詞','語彙龍','dragon',[
+    ve('ubiquitous','adj. 無所不在的','隨處可見的','Smartphones are ubiquitous.'),
+    ve('detrimental','adj. 有害的','有損的','detrimental to health，取代 bad。'),
+    ve('unprecedented','adj. 前所未有的','空前的','unprecedented growth。'),
+    ve('sustainable','adj. 永續的','可持續的','環境題的核心字。'),
+    ve('inherent','adj. 固有的','與生俱來的','inherent risks＝本身就有的風險。'),
+    ve('profound','adj. 深遠的','深刻的','a profound impact on。'),
+    ve('sceptical','adj. 存疑的','懷疑的','be sceptical about，美式拼 skeptical。'),
+    ve('ambiguous','adj. 模稜兩可的','含糊的','an ambiguous statement。'),
+  ]),
+  phraseCh('e53','高階形容詞・造句','造句龍','dragon',[
+    pe('Smartphones have become ubiquitous in daily life.','智慧型手機在日常生活中已無所不在','become + 形容詞。'),
+    pe('Long working hours are detrimental to health.','長工時有害健康','detrimental to。'),
+    pe('The pandemic caused unprecedented disruption.','疫情造成前所未有的衝擊','cause + 抽象名詞。'),
+    pe('We must find a sustainable solution to this problem.','我們必須找出永續的解決方案','sustainable solution。'),
+    pe('There are inherent risks in any investment.','任何投資都有其固有風險','inherent risks in。'),
+    pe('Many people remain sceptical about these claims.','許多人對這些說法仍持懷疑','remain sceptical about。'),
+  ]),
+  phraseCh('e54','慣用與隱喻','魔王・語感','dragon',[
+    pe('The policy is very much a double-edged sword.','這個政策根本是把雙面刃','double-edged sword＝雙面刃。'),
+    pe('This issue has come under the spotlight recently.','這議題最近備受矚目','under the spotlight。'),
+    pe('We should not throw the baby out with the bathwater.','不該因噎廢食','反對全盤否定時使用。'),
+    pe('The government is walking a tightrope between the two.','政府正在兩者之間走鋼索','walk a tightrope＝艱難平衡。'),
+    pe('These findings should be taken with a pinch of salt.','這些發現應保留看待','take with a pinch of salt＝持保留態度。'),
+    pe('Education is the cornerstone of a fair society.','教育是公平社會的基石','cornerstone of＝基石。'),
+    pe('The benefits, in my view, far outweigh the drawbacks.','在我看來，好處遠大於壞處','插入語 in my view 提升句構。'),
+  ]),
+]},
+];
+
 /* ================= 世界（大陸）設定 ================= */
 const WORLDS={
  jp:{id:'jp',name:'日本大陸',icon:'🌸',tts:'ja',letter:'假名',regions:REGIONS},
  kr:{id:'kr',name:'韓國大陸',icon:'💜',tts:'ko',letter:'字母',regions:REGIONS_KR},
+ us:{id:'us',name:'美國大陸',icon:'🗽',tts:'en',letter:'單字',regions:REGIONS_US},
 };
 
 // 主題魔王：每個區域最後追加一場「總復習」魔王戰。
@@ -2484,7 +3055,7 @@ Object.values(WORLDS).forEach(w=>w.regions.forEach(r=>{
 // 索引（跨兩塊大陸；章節與區域 id 全域唯一）
 // ITEM_BY_KEY：錯題本用的字→物件反查表。每個 item 也蓋上出身章節（_cid/_ck/_cw），
 // 這樣錯題複習把來自不同章節的字混在一起時，仍知道該用哪種題型與哪個干擾項池。
-const CHMAP={},REGION_OF={},RMAP={},KANA_POOL={jp:[],kr:[]},ITEM_BY_KEY={};
+const CHMAP={},REGION_OF={},RMAP={},KANA_POOL={jp:[],kr:[],us:[]},ITEM_BY_KEY={};
 Object.values(WORLDS).forEach(w=>w.regions.forEach(r=>{
   RMAP[r.id]=r;
   r.chapters.forEach(c=>{
@@ -2565,6 +3136,39 @@ kr:[
  {t:'날씨가 좋네요',ro:'nal·ssi·ga jon·ne·yo',zh:'天氣真好呢',note:'開啟閒聊的第一招。'},
  {t:'꿈만 같아요',ro:'kkum·man ga·ta·yo',zh:'像做夢一樣',note:'開心到不敢相信時說。'},
  {t:'맛있게 드세요',ro:'ma·sit·ge deu·se·yo',zh:'請慢用',note:'店員上菜必說，也可對同桌的人說。'},
+],
+us:[
+ {t:'How is it going?',ro:'howzit·GOH·ing',zh:'最近如何？',note:'比 How are you 口語得多，回 Not bad 就夠。'},
+ {t:'No worries at all.',ro:'no·WOR·eez·at·all',zh:'完全沒關係',note:'道歉與道謝都能接，英美澳通用。'},
+ {t:"I'd say it depends.",ro:"ID·say it·dee·PENDS",zh:'我會說要看情況',note:'雅思口說最安全的開場，先給立場再展開。'},
+ {t:'Fair enough.',ro:'fair·uh·NUF',zh:'有道理／可以接受',note:'同意對方但不熱烈時的萬用回應。'},
+ {t:'I am not too keen on that.',ro:'not·too·KEEN·on',zh:'我不太喜歡那個',note:'be keen on＝喜歡，否定時特別委婉。'},
+ {t:'That makes sense.',ro:'that·makes·SENSE',zh:'這說得通',note:'聽懂對方解釋時的標準回應。'},
+ {t:'Let me get back to you on that.',ro:'get·BACK·to·you',zh:'這件事我晚點回覆你',note:'職場拖延與思考時間的救命句。'},
+ {t:'I am just about to leave.',ro:'just·uh·BOWT·to',zh:'我正要出門',note:'be about to＝正要，比 will 精準。'},
+ {t:'It is not a big deal.',ro:'not·uh·BIG·deal',zh:'沒什麼大不了',note:'安慰別人或自嘲都能用。'},
+ {t:'Long time no see!',ro:'long·time·no·SEE',zh:'好久不見！',note:'雖是破格文法，母語者天天說。'},
+ {t:'Sorry, I did not catch that.',ro:'did·nt·CATCH·that',zh:'抱歉我沒聽清楚',note:'聽力沒跟上時的第一選擇。'},
+ {t:'Do you fancy grabbing lunch?',ro:'FAN·see·GRAB·ing',zh:'要不要去吃個午餐？',note:'fancy doing＝想做，英式口語。'},
+ {t:'I am absolutely knackered.',ro:'ab·so·LOOT·ly NAK·erd',zh:'我累爆了',note:'英式俚語，等於 exhausted。'},
+ {t:'To be honest, I am not sure.',ro:'tuh·bee·ON·ist',zh:'老實說我不確定',note:'誠實承認不確定不扣分，硬掰才扣。'},
+ {t:'That is exactly what I mean.',ro:'ig·ZAKT·ly what·I·mean',zh:'這正是我的意思',note:'對方幫你講出重點時使用。'},
+ {t:'It slipped my mind.',ro:'SLIPT·my·mind',zh:'我一時忘了',note:'比 I forgot 委婉得多。'},
+ {t:'I will keep that in mind.',ro:'keep·that·in·MIND',zh:'我會記住的',note:'接受建議的漂亮收尾。'},
+ {t:'Could you give me a hand?',ro:'give·me·uh·HAND',zh:'可以幫我一下嗎？',note:'give a hand＝幫忙，很道地。'},
+ {t:'I am running a bit late.',ro:'RUN·ing uh·bit·LATE',zh:'我會晚一點到',note:'遲到時的標準通知句。'},
+ {t:'Take your time.',ro:'take·yer·TIME',zh:'慢慢來別急',note:'體貼又簡短，回應上面那句最合適。'},
+ {t:'It is worth a try.',ro:'WERTH·uh·try',zh:'值得試試看',note:'be worth + 名詞或動名詞。'},
+ {t:'I am on my way.',ro:'on·my·WAY',zh:'我在路上了',note:'訊息裡常縮寫成 OMW。'},
+ {t:'Let us play it by ear.',ro:'play·it·by·EER',zh:'我們隨機應變吧',note:'不預先計畫，看情況決定。'},
+ {t:'That is easier said than done.',ro:'EEZ·ee·er said·than·DUN',zh:'說得比做得容易',note:'議論時很好用的讓步句。'},
+ {t:'I could not agree more.',ro:'could·nt·uh·GREE·more',zh:'我完全同意',note:'否定比較級＝最強烈的同意。'},
+ {t:'It is up to you.',ro:'UP·tuh·you',zh:'由你決定',note:'be up to sb＝取決於某人。'},
+ {t:'I am afraid I have to disagree.',ro:'uh·FRAYD·I·have·to',zh:'恐怕我必須不同意',note:'禮貌反對的標準開場。'},
+ {t:'Sorry to bother you, but...',ro:'BOTH·er·you·but',zh:'不好意思打擾一下……',note:'開口求助前的緩衝句。'},
+ {t:'Better late than never.',ro:'BET·er·late·than·NEV·er',zh:'遲到總比不到好',note:'自嘲或安慰別人都行。'},
+ {t:'Have a good one!',ro:'have·uh·GOOD·wun',zh:'祝你順利！',note:'美式道別，比 goodbye 輕鬆。'},
+ {t:'Same here.',ro:'SAME·here',zh:'我也是',note:'兩個字就能表達認同，超高效率。'},
 ],
 };
 
@@ -2728,7 +3332,7 @@ const SFX={
 
 /* ================= 發音（TTS，日／韓） ================= */
 function ttsOK(){return 'speechSynthesis' in window;}
-const VOICE={ja:null,ko:null},VLANG={ja:'ja-JP',ko:'ko-KR'};
+const VOICE={ja:null,ko:null,en:null},VLANG={ja:'ja-JP',ko:'ko-KR',en:'en-US'};
 function pickVoice(){
   if(!ttsOK())return;
   const vs=speechSynthesis.getVoices();
@@ -3059,6 +3663,10 @@ const TAUNTS={
   ghost:'흐흐흐… 這些字母你記得住嗎？',bird:'짹짹！答慢一點我就飛走囉！',
   fox:'여우여우～ 人家可是很聰明的狐狸喔',oni:'어라？敢闖到這裡，有兩下子嘛！',
   dragon:'크앙——想通過這裡，就用韓文打敗我！'},
+ us:{slime:'Well well… 你的英文夠格通過這裡嗎？',cat:'Meow~ 講得出來再說吧！',
+  ghost:'Boo… 這些字你真的記得住嗎？',bird:'Tweet！答太慢我就飛走囉！',
+  fox:'Hmm~ 人家可是很狡猾的狐狸喔',oni:'Oh? 敢闖到這裡，有點膽識嘛！',
+  dragon:'ROAR——想拿到 Band 8，就用英文打敗我！'},
 };
 function tauntOf(ch){
   if(ch.review)return '你忘掉的字，我可都收著呢……敢再答錯一次嗎？';
