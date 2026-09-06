@@ -3341,15 +3341,22 @@ function pickVoice(){
 }
 if(ttsOK()){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}
 function curLang(){return WORLDS[curWorld].tts;}
-function say(txt,lang){
-  if(!ttsOK()||!txt)return;
+function once(fn){let done=0;return()=>{if(!done){done=1;fn();}};}
+function say(txt,lang,onEnd){
+  const fin=onEnd&&once(onEnd);
+  if(!ttsOK()||!txt){if(fin)fin();return;}
   lang=lang||curLang();
   try{
     speechSynthesis.cancel();
     const u=new SpeechSynthesisUtterance(txt);
     u.lang=VLANG[lang];if(VOICE[lang])u.voice=VOICE[lang];u.rate=.85;
+    if(fin){
+      u.onend=fin;u.onerror=fin;
+      // 保險：部分瀏覽器（尤其手機）不一定會觸發 onend，估唸完時間兜底
+      setTimeout(fin,Math.min(15000,1500+txt.length*280));
+    }
     speechSynthesis.speak(u);
-  }catch(e){}
+  }catch(e){if(fin)fin();}
 }
 function sayItem(it){say(it.kana||it.jp);}
 
@@ -3900,14 +3907,20 @@ function sayTalk(){
 function talkPick(k){
   const st=T.ch.steps[T.i],c=st.ch[k];
   if(c.ok){
-    SFX.ok();say(c.jp.replace(/（[^）]*）/g,''));
+    SFX.ok();
     T.exp+=T.tried?5:10;
     st.ch.forEach((_,i)=>{const b=$('topt-'+i);if(b)b.disabled=true;});
     $('topt-'+k).classList.add('right');
-    setTimeout(()=>{
-      T.i++;
-      T.i>=T.ch.steps.length?endTalk():renderTalk();
-    },1000);
+    const t0=Date.now(),atStep=T.i;
+    say(c.jp.replace(/（[^）]*）/g,''),null,()=>{
+      // 等整句唸完再走，並保底 1 秒讓玩家看得完字
+      if(!$('scr-talk').classList.contains('on')||T.i!==atStep)return;  // 玩家中途返回就別硬跳
+      setTimeout(()=>{
+        if(!$('scr-talk').classList.contains('on')||T.i!==atStep)return;
+        T.i++;
+        T.i>=T.ch.steps.length?endTalk():renderTalk();
+      },Math.max(300,1000-(Date.now()-t0)));
+    });
   }else{
     SFX.bad();T.tried=true;
     const b=$('topt-'+k);b.classList.add('wrong');b.disabled=true;

@@ -18,20 +18,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 驗證（改完必跑）
 
-無測試框架。把 `<script>` 抽出來做語法檢查：
+無測試框架。把 `<script>` 抽出來做語法檢查（repo 沒有 `.gitignore`，寫到 temp 而不是工作目錄）：
 
 ```powershell
-node -e "const s=require('fs').readFileSync('index.html','utf8');require('fs').writeFileSync('game.js',s.match(/<script>([\s\S]*)<\/script>/)[1]);"
-node --check game.js
+node -e "const s=require('fs').readFileSync('index.html','utf8');require('fs').writeFileSync(process.env.TEMP+'/game.js',s.match(/<script>([\s\S]*)<\/script>/)[1]);"
+node --check $env:TEMP\game.js
 ```
 
-（`game.js` 是暫存產物，沒有 `.gitignore`，檢查完刪掉或寫到 scratchpad，別 commit。）
+這個正規式假設全檔**只有一個** `<script>`（目前 401–4118 行）與一個 `<style>`——維持這個前提，別加第二個 script 標籤。
 
 改資料層後建議再跑資料完整性檢查：寫個 stub 腳本（stub 掉 `document`/`localStorage`/`window` 等，eval 資料段），檢查：每個 sprite 所有 row 等寬、章節 id 不重複、每個 talk step 的選項恰好一個 `ok:1`。最後在瀏覽器實開確認。
 
 ## 架構（單檔內的分區）
 
 `index.html` 三大塊：CSS（頂部 `<style>`）→ 畫面 DOM（9 個 `div.screen`：`scr-title/map/srs/region/learn/battle/talk/result/write`，用 `go(id)` 切換）→ 單一 `<script>`。JS 依註解分節（`/* ==== 節名 ==== */`）：`內容資料 → 韓國大陸 → 美國大陸 → 世界設定 → 每日一句 → 像素 sprite → 存檔 → 音效 → TTS → 小工具 → 進度與解鎖 → 錯題本/SRS → 標題/世界地圖 → 學習模式 → 戰鬥 → 勝敗結算 → 對話劇情 → 畫符文 → 啟動`。
+
+### 檔案地圖（4120 行 / 300KB，別整檔讀）
+
+`grep -n "====" index.html` 一次列出所有分節。粗略分界：
+
+| 行 | 內容 |
+|---|---|
+| 9–230 | `<style>` |
+| 236–362 | 9 個 `div.screen` 的 DOM |
+| 403–3036 | **資料層**（日 403／韓 1580／美 2468 起），佔全檔約 2/3，加內容只動這段 |
+| 3037–4118 | 世界設定、索引 pass、sprite、存檔、音效、TTS、SRS、UI 與戰鬥邏輯 |
 
 ### 資料層（最常改的地方）
 
@@ -42,6 +53,10 @@ node --check game.js
 - `talk`：Visual Novel 對話，直接寫物件 `{kind:'talk', npc:{name,sprite}, steps:[{jp,zh,ch:[選項]}]}`，每 step 的 `ch` 恰好一個 `ok:1`，錯誤選項要有 `why`（解釋為什麼失禮）
 
 章節與區域 id 需**跨三大陸全域唯一**（韓國用 `kr*`/`kc*`/`kd*` 前綴，美國用 `us*`／章節 `e*`）。
+
+羅馬拼音欄 `ro` 三種 helper 來源不同：`vh()`/`vk()` 由 `toRomaji(kana)` 自動產生（改假名等於改拼音，別手填）、`kv()` 第二個參數手寫、`ve()`/`pe()` 沒有 `ro`。
+
+**加一章的檢查清單**：① id 全域唯一 ② sprite 名稱必須是既有的 7 個怪物之一 ③ 放進對應 region 的 `chapters` 陣列，位置即解鎖順序 ④ boss 別手寫 ⑤ 單字篇後面照慣例補一個配套 `phrase` 造句章 ⑥ 跑語法檢查＋瀏覽器實開。
 
 **美國大陸走 IELTS 5.0→8.0**：假設玩家已有底子，所以沒有字母關，全是 `vocab`＋配套造句 `phrase`＋4 場情境 VN。`ve()` 的 `sub` 放詞性、`memo` 放搭配（collocation）——雅思的分數在搭配上，別寫成單純的中文對照。英文字串含 `'` 時整串改用雙引號。
 
@@ -63,6 +78,12 @@ Leitner 盒子制：`SRS_STEP=[0,1,2,4,7,15]` 天，答錯 `srsMiss()` 掉回第
 ### 像素 sprite
 
 `SPRITES` 是字串網格（每字元對應 `PAL` 調色盤一色，`.` 透明），`drawSprite(canvas,rows,scale)` 畫出。新怪物＝加一個 grid，**所有 row 必須等寬**。
+
+目前只有 7 個怪物可選：`slime` `bird` `cat` `fox` `oni` `dragon` `ghost`（另有 `hero`）。章節寫了不存在的 sprite 名稱**不會**在語法檢查時報錯，要到該關開打才炸——要嘛沿用這 7 個，要嘛先加 grid。
+
+### 對話劇情（VN）的節奏
+
+答對後**不是**固定延遲換頁：`talkPick()` 把 `say()` 的第三參數當回呼，等整句唸完（`onend`／估時兜底）再保底 1 秒才 `renderTalk()` 或 `endTalk()`，避免話沒講完就跳下一章。`say(txt,lang,onEnd)` 的 `onEnd` 保證只觸發一次（`once()`），沒有 TTS 時同步觸發。
 
 ### 戰鬥出題
 
