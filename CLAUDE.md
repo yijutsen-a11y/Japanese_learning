@@ -31,7 +31,7 @@ node --check $env:TEMP\game.js
 
 ## 架構（單檔內的分區）
 
-`index.html` 三大塊：CSS（頂部 `<style>`）→ 畫面 DOM（9 個 `div.screen`：`scr-title/map/srs/region/learn/battle/talk/result/write`，用 `go(id)` 切換）→ 單一 `<script>`。JS 依註解分節（`/* ==== 節名 ==== */`）：`內容資料 → 韓國大陸 → 美國大陸 → 世界設定 → 每日一句 → 像素 sprite → 存檔 → 音效 → TTS → 小工具 → 進度與解鎖 → 錯題本/SRS → 標題/世界地圖 → 學習模式 → 戰鬥 → 勝敗結算 → 對話劇情 → 畫符文 → 啟動`。
+`index.html` 三大塊：CSS（頂部 `<style>`）→ 畫面 DOM（9 個 `div.screen`：`scr-title/map/srs/region/learn/battle/talk/result/write`，用 `go(id)` 切換）→ 單一 `<script>`。JS 依註解分節（`/* ==== 節名 ==== */`）：`內容資料 → 韓國大陸 → 美國大陸 → 世界設定 → 每日一句 → 像素 sprite → 存檔 → 音效 → TTS → 小工具 → 進度與解鎖 → 複習本/SRS → 標題/世界地圖 → 學習模式 → 戰鬥 → 勝敗結算 → 對話劇情 → 畫符文 → 啟動`。
 
 ### 檔案地圖（4120 行 / 300KB，別整檔讀）
 
@@ -60,7 +60,7 @@ node --check $env:TEMP\game.js
 
 **美國大陸走 IELTS 5.0→8.0**：假設玩家已有底子，所以沒有字母關，全是 `vocab`＋配套造句 `phrase`＋4 場情境 VN。`ve()` 的 `sub` 放詞性、`memo` 放搭配（collocation）——雅思的分數在搭配上，別寫成單純的中文對照。英文字串含 `'` 時整串改用雙引號。
 
-**魔王戰不要手寫**：載入時程式自動為每個 region 追加 `{id:'rX_boss', boss:true}` 章節，題池＝該區全部非 talk items（抽 12 題、時限 8 秒）。加內容後魔王戰自動更新。資料層之後會建索引 `CHMAP`/`REGION_OF`/`RMAP`/`KANA_POOL`（依大陸分池，聽力干擾項不跨語言）／`ITEM_BY_KEY`，同時在每個 item 上蓋出身章節 `_cid`/`_ck`/`_cw`——錯題本靠這三個欄位還原題型與干擾項池，加新 helper 或新 kind 時別漏掉這個 pass。
+**魔王戰不要手寫**：載入時程式自動為每個 region 追加 `{id:'rX_boss', boss:true}` 章節，題池＝該區全部非 talk items（抽 12 題、時限 8 秒）。加內容後魔王戰自動更新。資料層之後會建索引 `CHMAP`/`REGION_OF`/`RMAP`/`KANA_POOL`（依大陸分池，聽力干擾項不跨語言）／`ITEM_BY_KEY`，同時在每個 item 上蓋出身章節 `_cid`/`_ck`/`_cw`——複習本靠這三個欄位還原題型與干擾項池，加新 helper 或新 kind 時別漏掉這個 pass。
 
 **每日一句**：`DAILY={jp:[…],kr:[…]}` 各 31 句高頻口語（`{t,ro,zh,note}`），依 day-of-year 輪替，`startGame(world)` 進大陸時彈出。
 
@@ -69,9 +69,11 @@ node --check $env:TEMP\game.js
 - 章節：需通過前一章；boss 需通關全區非 boss 章節（`chapterUnlocked`）；區域：前一區通關半數章節（`regionUnlocked`）
 - 存檔：`localStorage` key `kawaii_quest_save_v1`，結構 `{exp, clears:{章節id:星數}, nextBuff, srs:{key:{box,due,miss,cid,w}}, srsDone}`。改結構時注意 `loadSave()` 用 `Object.assign` 補預設值做向後相容
 
-### 錯題本 / 間隔複習（SRS）
+### 複習本 / 間隔複習（SRS）
 
-Leitner 盒子制：`SRS_STEP=[0,1,2,4,7,15]` 天，答錯 `srsMiss()` 掉回第 0 盒，複習答對 `srsHit()` 往後推一盒，走完 `SRS_MAX` 就畢業（刪 entry、`srsDone++`）。字的識別碼是 `itemKey(it)=大陸|jp|zh`，靠 `ITEM_BY_KEY` 反查回 item——**改動 item 的 `jp`/`zh` 等於換 key，舊錯題會對不上**（`srsEntries()` 會直接略過查不到的舊 key，不會壞檔）。
+Leitner 盒子制：`SRS_STEP=[0,1,2,4,7,15]` 天。**戰鬥中遇過的字都會進盒子，不只答錯的**——這場沒栽過的字答對時 `srsHit()` 建 entry 放第 1 盒（隔天複習），已有 entry 就往後推一盒，走完 `SRS_MAX` 畢業（刪 entry、`srsDone++`）；答錯 `srsMiss()` 掉回第 0 盒。兩個函式都要求 item 有 `_cid`，沒出身章節的不收。字的識別碼是 `itemKey(it)=大陸|jp|zh`，靠 `ITEM_BY_KEY` 反查回 item——**改動 item 的 `jp`/`zh` 等於換 key，舊紀錄會對不上**（`srsEntries()` 會直接略過查不到的舊 key，不會壞檔）。
+
+複習戰 EXP ×1.5（`winBattle()`），因為它沒有首通加成——不加成的話理性玩家只會一直打新關。地圖入口與統計的到期數超過 99 顯示 `99+`（`dueTxt()`），積欠數字不該嚇人。
 
 `startReview()` 把到期的字塞進臨時章節 `CHMAP.__review__`（`review:true`），戰鬥流程共用；`nextQ()` 看到 `B.ch.review` 就改用每個字自己的 `_ck`/`_cw`/`_cid` 決定題型、TTS 語言與干擾項來源。
 
