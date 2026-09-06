@@ -3360,7 +3360,10 @@ const SFX={
 };
 
 /* ================= 發音（TTS，日／韓） ================= */
-function ttsOK(){return 'speechSynthesis' in window;}
+function ttsOK(lang){                             // 帶 lang＝連「有沒有這個語言的語音」一起問
+  if(!('speechSynthesis' in window))return false;
+  return lang?!!VOICE[lang]:true;
+}
 const VOICE={ja:null,ko:null,en:null},VLANG={ja:'ja-JP',ko:'ko-KR',en:'en-US'};
 function pickVoice(){
   if(!ttsOK())return;
@@ -3375,6 +3378,7 @@ function say(txt,lang,onEnd){
   const fin=onEnd&&once(onEnd);
   if(!ttsOK()||!txt){if(fin)fin();return;}
   lang=lang||curLang();
+  if(!VOICE[lang]){if(fin)fin();return;}          // 沒有該語言的語音就別唸——用英文語音唸日文是教錯的
   try{
     speechSynthesis.cancel();
     const u=new SpeechSynthesisUtterance(txt);
@@ -3728,10 +3732,10 @@ function renderBstat(){
 function nextQ(){
   B.lock=false;
   const it=B.qs[B.qi];
-  const listen=ttsOK()&&Math.random()<0.4;
   // 複習混了各章節的字，題型與干擾項池要看每個字自己的出身章節
   const kind=B.ch.review?(it._ck||'vocab'):B.ch.kind;
   const world=B.ch.review?(it._cw||curWorld):RMAP[REGION_OF[B.ch.id]].world;
+  const listen=ttsOK(WORLDS[world].tts)&&Math.random()<0.4;   // 這個大陸沒語音就全出閱讀題
   const optKey=(kind==='kana')?(listen?'jp':'ro'):'zh';
   // 選項池：假名／字母章節可跨章混入同大陸的其他字；同標籤（如 じ/ぢ 同音）去重
   const pool=(kind==='kana')?KANA_POOL[world]
