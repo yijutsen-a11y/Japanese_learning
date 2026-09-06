@@ -185,9 +185,9 @@ canvas.spr{image-rendering:pixelated;display:block;}
   border-radius:2px;pointer-events:none;max-width:90vw;text-align:center;line-height:1.5;}
 #toast.show{transform:translateX(-50%) translateY(0);}
 
-#daily{position:fixed;inset:0;z-index:110;display:none;place-items:center;
+#daily,#backup{position:fixed;inset:0;z-index:110;display:none;place-items:center;
   background:rgba(10,10,22,.78);padding:20px;}
-#daily.show{display:grid;animation:popin .18s ease-out;}
+#daily.show,#backup.show{display:grid;animation:popin .18s ease-out;}
 .dailybox{max-width:420px;width:100%;display:flex;flex-direction:column;gap:10px;
   padding:18px 16px;text-align:center;align-items:center;background:var(--night);}
 .dailybox .dsent{font-size:26px;font-weight:900;line-height:1.5;}
@@ -253,6 +253,7 @@ canvas.spr{image-rendering:pixelated;display:block;}
       建議開啟聲音，體驗 8-bit 音效與日／韓／英發音
     </p>
     <div style="align-self:center;display:flex;gap:8px;">
+      <button class="btn ghostbtn" style="font-size:12px;padding:5px 10px;" onclick="openBackup()">💾 備份／還原</button>
       <button class="btn ghostbtn" style="font-size:12px;padding:5px 10px;" onclick="resetSave()">重置進度</button>
       <button class="btn ghostbtn" style="font-size:12px;padding:5px 10px;" onclick="adminPrompt()">admin</button>
     </div>
@@ -394,6 +395,20 @@ canvas.spr{image-rendering:pixelated;display:block;}
     <div class="writeacts" style="margin-top:6px;">
       <button class="btn" onclick="sayDaily()">🔊 聽發音</button>
       <button class="btn gold" onclick="closeDaily()">⚔ 收下，出發！</button>
+    </div>
+  </div>
+</div>
+
+<!-- 存檔備份 -->
+<div id="backup">
+  <div class="panel dailybox">
+    <div class="tag">💾 存檔備份</div>
+    <div class="small" style="color:var(--dim);">複製下面整段文字存起來（換裝置、清瀏覽器資料前）。<br>要還原就把備份貼進來，再按「還原」。</div>
+    <textarea id="bk-text" spellcheck="false" style="width:100%;height:120px;font:11px/1.4 ui-monospace,monospace;background:#0d0d1c;color:var(--ink);border:2px solid var(--line);border-radius:6px;padding:8px;resize:vertical;"></textarea>
+    <div class="writeacts" style="margin-top:6px;">
+      <button class="btn" onclick="copyBackup()">📋 全選複製</button>
+      <button class="btn" onclick="restoreBackup()">♻ 還原</button>
+      <button class="btn gold" onclick="closeBackup()">關閉</button>
     </div>
   </div>
 </div>
@@ -3293,6 +3308,20 @@ function resetSave(){
     try{localStorage.removeItem(KEY);}catch(e){}
     save=loadSave();toast('進度已重置，重新出發！');
   }
+}
+function openBackup(){SFX.tap();$('bk-text').value=JSON.stringify(save);$('backup').classList.add('show');}
+function closeBackup(){SFX.tap();$('backup').classList.remove('show');}
+function copyBackup(){
+  const t=$('bk-text');t.focus();t.select();t.setSelectionRange(0,999999);   // iOS 要 setSelectionRange 才選得到全部
+  try{document.execCommand('copy');toast('已複製，貼到記事本存起來');}catch(e){toast('請手動長按複製');}
+}
+function restoreBackup(){
+  let s;
+  try{s=JSON.parse($('bk-text').value);}catch(e){SFX.bad();toast('這段備份看不懂，確認有整段貼到');return;}
+  if(!s||typeof s.exp!=='number'||typeof s.clears!=='object'){SFX.bad();toast('這不是本遊戲的備份檔');return;}
+  if(!confirm('還原後會覆蓋這台裝置目前的進度，確定嗎？'))return;
+  save=Object.assign({exp:0,clears:{},nextBuff:null,srs:{},srsDone:0},s);
+  persist();closeBackup();SFX.lvl();toast('進度已還原！');
 }
 function levelInfo(e){
   let lv=1,need=100;
