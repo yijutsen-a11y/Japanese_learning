@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 硬性限制
 
 - **Artifact 嚴格 CSP**：禁止外部圖片、字型、CDN、fetch。所有素材以 Canvas（像素 sprite）、CSS、WebAudio（音效）程式合成；發音用瀏覽器內建 `speechSynthesis`（`VLANG` 對應 ja-JP／ko-KR／en-US），沒有該語音時聽力題自動退化為閱讀題——`ttsOK(lang)` **要帶語言參數**才會檢查「這台機器有沒有這個語言的語音」（不帶只檢查瀏覽器支不支援）；`say()` 同樣在缺語音時直接不唸，用英文語音唸日文是教錯的。
-- 保持單檔：不要拆檔、不要引入框架。
+- 保持單檔：遊戲邏輯全在 `index.html`，不要拆檔、不要引入框架。唯一例外是 PWA 外殼（`manifest.webmanifest`、`sw.js`、`icon-180/192/512.png`），它們無法內嵌，只負責「可安裝＋離線」，別往裡放遊戲邏輯。`sw.js` 是網路優先，push 後不用改版本號；SW 註冊包在 try/catch 裡，Artifact 環境會靜默略過。
 - 韓文字母（諺文）沒有筆順資料（KanjiVG 只有日文假名），寫字板會自動退回字型描邊——這是預期行為。筆順資料離線嵌入在 `STROKES` 常數（KanjiVG 點列，74 字）。
 
 ## 驗證（改完必跑）

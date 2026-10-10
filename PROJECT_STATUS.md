@@ -8,6 +8,8 @@
 
 - 需要網路嗎：不需要。全部素材（像素圖、音效）皆以 Canvas / WebAudio 程式合成。
 - 發音：使用瀏覽器內建 TTS（`speechSynthesis`，日 ja-JP／韓 ko-KR／英 en-US 依大陸切換）。裝置沒有對應語音時，聽力題會自動退化為閱讀題。
+- **裝到手機（PWA）**：用手機瀏覽器開 https://yijutsen-a11y.github.io/Japanese_learning/ → Android Chrome 選「安裝應用程式」／iOS Safari 分享鈕 →「加入主畫面」。裝好後全螢幕、可離線玩；有網路時自動抓最新版。
+- **iOS 搬存檔**：iOS 主畫面 app 與 Safari 存檔互不相通。先在 Safari 標題畫面「💾 備份」複製那段文字，再到主畫面 app 裡「還原」貼上。
 - 進度：存在 `localStorage`（key：`kawaii_quest_save_v1`），標題畫面可重置，也可「💾 備份／還原」匯出一段文字自行保存（換裝置或清瀏覽器資料前用）。
 
 ## 目前狀態（v0.9，2026-08-10）
@@ -84,6 +86,7 @@
 | 檔案 | 說明 |
 |---|---|
 | `index.html` | 完整遊戲，單檔（HTML+CSS+JS） |
+| `manifest.webmanifest`／`sw.js`／`icon-*.png` | PWA 外殼：安裝資訊、離線快取（網路優先）、主畫面圖示（由 `hero` sprite 放大產生） |
 
 ## 驗證方式
 

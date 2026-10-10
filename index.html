@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>可不可愛、日文厲害</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#1a1c2c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 </head>
 <body>
 <style>
@@ -4165,6 +4170,8 @@ drawSprite($('cv-boss-t'),SPRITES.dragon,6);
 initWriting();
 requestAnimationFrame(fxLoop);
 go('title');
+if('serviceWorker' in navigator)try{navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(e){}
+try{navigator.storage?.persist?.();}catch(e){}
 </script>
 </body>
 </html>
