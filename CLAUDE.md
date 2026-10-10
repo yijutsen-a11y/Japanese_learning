@@ -4,16 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 專案概觀
 
-「可不可愛、日文厲害」——像素 RPG 語言學習遊戲，三大陸：日本（五十音到 N1）＋韓國（諺文到 TOPIK II）＋美國（IELTS 5.0 到 8.0）。**整個遊戲就是一個檔案 `index.html`**（HTML+CSS+JS），零依賴、無 build。目前內容狀態與玩法清單見 `PROJECT_STATUS.md`（內容大改時要同步更新它；父層工作區 `D:\claude\README.md` 的總覽表也一併更新——注意本 repo 自己的 `README.md` 只是兩行 stub，總覽表在 repo 之外的父目錄）。
+「可不可愛、日文厲害」——像素 RPG 語言學習遊戲，三大陸：日本（五十音到 N1）＋韓國（諺文到 TOPIK II）＋美國（IELTS 5.0 到 8.0）。**整個遊戲就是一個檔案 `Japanese_learning.html`**（HTML+CSS+JS），零依賴、無 build。目前內容狀態與玩法清單見 `PROJECT_STATUS.md`（內容大改時要同步更新它；父層工作區 `D:\claude\README.md` 的總覽表也一併更新——注意本 repo 自己的 `README.md` 只是兩行 stub，總覽表在 repo 之外的父目錄）。
 
-執行：直接用瀏覽器開 `index.html`（建議直式視窗）。
+執行：直接用瀏覽器開 `Japanese_learning.html`（建議直式視窗）。`index.html` 只是轉址頁（GitHub Pages 首頁與舊版已安裝的 app 靠它），別往裡放東西。
 
 部署：GitHub repo 為 https://github.com/yijutsen-a11y/Japanese_learning ，GitHub Pages 已啟用（https://yijutsen-a11y.github.io/Japanese_learning/ ）——push 到 `main` 即上線，無其他部署步驟。
 
 ## 硬性限制
 
 - **Artifact 嚴格 CSP**：禁止外部圖片、字型、CDN、fetch。所有素材以 Canvas（像素 sprite）、CSS、WebAudio（音效）程式合成；發音用瀏覽器內建 `speechSynthesis`（`VLANG` 對應 ja-JP／ko-KR／en-US），沒有該語音時聽力題自動退化為閱讀題——`ttsOK(lang)` **要帶語言參數**才會檢查「這台機器有沒有這個語言的語音」（不帶只檢查瀏覽器支不支援）；`say()` 同樣在缺語音時直接不唸，用英文語音唸日文是教錯的。
-- 保持單檔：遊戲邏輯全在 `index.html`，不要拆檔、不要引入框架。唯一例外是 PWA 外殼（`manifest.webmanifest`、`sw.js`、`icon-180/192/512.png`），它們無法內嵌，只負責「可安裝＋離線」，別往裡放遊戲邏輯。`sw.js` 是網路優先，push 後不用改版本號；SW 註冊包在 try/catch 裡，Artifact 環境會靜默略過。
+- 保持單檔：遊戲邏輯全在 `Japanese_learning.html`，不要拆檔、不要引入框架。唯一例外是 PWA 外殼（`manifest.webmanifest`、`sw.js`、`icon-180/192/512.png`），它們無法內嵌，只負責「可安裝＋離線」，別往裡放遊戲邏輯。`sw.js` 是網路優先，push 後不用改版本號；SW 註冊包在 try/catch 裡，Artifact 環境會靜默略過。
 - 韓文字母（諺文）沒有筆順資料（KanjiVG 只有日文假名），寫字板會自動退回字型描邊——這是預期行為。筆順資料離線嵌入在 `STROKES` 常數（KanjiVG 點列，74 字）。
 
 ## 驗證（改完必跑）
@@ -21,7 +21,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 無測試框架。把 `<script>` 抽出來做語法檢查（repo 沒有 `.gitignore`，寫到 temp 而不是工作目錄）：
 
 ```powershell
-node -e "const s=require('fs').readFileSync('index.html','utf8');require('fs').writeFileSync(process.env.TEMP+'/game.js',s.match(/<script>([\s\S]*)<\/script>/)[1]);"
+node -e "const s=require('fs').readFileSync('Japanese_learning.html','utf8');require('fs').writeFileSync(process.env.TEMP+'/game.js',s.match(/<script>([\s\S]*)<\/script>/)[1]);"
 node --check $env:TEMP\game.js
 ```
 
@@ -31,11 +31,11 @@ node --check $env:TEMP\game.js
 
 ## 架構（單檔內的分區）
 
-`index.html` 三大塊：CSS（頂部 `<style>`）→ 畫面 DOM（9 個 `div.screen`：`scr-title/map/srs/region/learn/battle/talk/result/write`，用 `go(id)` 切換）→ 單一 `<script>`。JS 依註解分節（`/* ==== 節名 ==== */`）：`內容資料 → 韓國大陸 → 美國大陸 → 世界設定 → 每日一句 → 像素 sprite → 存檔 → 音效 → TTS → 小工具 → 進度與解鎖 → 複習本/SRS → 標題/世界地圖 → 學習模式 → 戰鬥 → 勝敗結算 → 對話劇情 → 畫符文 → 啟動`。
+`Japanese_learning.html` 三大塊：CSS（頂部 `<style>`）→ 畫面 DOM（9 個 `div.screen`：`scr-title/map/srs/region/learn/battle/talk/result/write`，用 `go(id)` 切換）→ 單一 `<script>`。JS 依註解分節（`/* ==== 節名 ==== */`）：`內容資料 → 韓國大陸 → 美國大陸 → 世界設定 → 每日一句 → 像素 sprite → 存檔 → 音效 → TTS → 小工具 → 進度與解鎖 → 複習本/SRS → 標題/世界地圖 → 學習模式 → 戰鬥 → 勝敗結算 → 對話劇情 → 畫符文 → 啟動`。
 
 ### 檔案地圖（4120 行 / 300KB，別整檔讀）
 
-`grep -n "====" index.html` 一次列出所有分節。粗略分界：
+`grep -n "====" Japanese_learning.html` 一次列出所有分節。粗略分界：
 
 | 行 | 內容 |
 |---|---|

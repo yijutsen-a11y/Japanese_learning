@@ -4,7 +4,7 @@
 
 ## 怎麼跑
 
-無 build、無依賴，直接用瀏覽器開 `index.html` 即可（建議手機或視窗縮窄成直式）。
+無 build、無依賴，直接用瀏覽器開 `Japanese_learning.html` 即可（建議手機或視窗縮窄成直式）。
 
 - 需要網路嗎：不需要。全部素材（像素圖、音效）皆以 Canvas / WebAudio 程式合成。
 - 發音：使用瀏覽器內建 TTS（`speechSynthesis`，日 ja-JP／韓 ko-KR／英 en-US 依大陸切換）。裝置沒有對應語音時，聽力題會自動退化為閱讀題。
@@ -85,14 +85,16 @@
 
 | 檔案 | 說明 |
 |---|---|
-| `index.html` | 完整遊戲，單檔（HTML+CSS+JS） |
+| `Japanese_learning.html` | 完整遊戲，單檔（HTML+CSS+JS） |
+| `index.html` | 轉址頁：GitHub Pages 首頁與已安裝的 app 從這裡轉到 `Japanese_learning.html` |
+| `architecture.html` | 架構藍圖（載入路徑、檔案分區、資料管線、畫面流程、戰鬥迴圈、SRS 時間軸），依 2026-10-10 版本手繪，不會自動更新 |
 | `manifest.webmanifest`／`sw.js`／`icon-*.png` | PWA 外殼：安裝資訊、離線快取（網路優先）、主畫面圖示（由 `hero` sprite 放大產生） |
 
 ## 驗證方式
 
 ```powershell
 # 抽出 <script> 做語法檢查與資料完整性檢查（sprite 寬度、章節 id、對話正解數）
-node --check game.js   # 由 index.html 抽出
+node --check game.js   # 由 Japanese_learning.html 抽出
 ```
 
 （scratchpad 有 stub + checks 的組合驗證腳本模式，改資料後建議重跑。）
