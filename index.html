@@ -2506,7 +2506,8 @@ const REGIONS_KR=[
 
 /* ================= 美國大陸（IELTS 5.0 → 8.0） ================= */
 // 英文單字：jp=單字, sub=詞性, zh=中文, memo=用法／搭配（雅思的分數都在搭配上）
-function ve(en,pos,zh,memo){return {jp:en,sub:pos,zh,memo};}
+// pos 資料寫成「v. 通勤」，sub 只留詞性：題目下方會顯示 sub，帶中文等於把答案印出來
+function ve(en,pos,zh,memo){return {jp:en,sub:pos.split(' ')[0],zh,memo};}
 // 英文句子（實戰句／造句）
 function pe(en,zh,memo){return {jp:en,zh,memo};}
 
