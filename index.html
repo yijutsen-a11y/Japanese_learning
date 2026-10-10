@@ -483,6 +483,25 @@ function phraseCh(id,name,mon,spr,items){return {id,name,kind:'phrase',monster:{
 
 const REGIONS=[
 {id:'r0',icon:'slime',name:'新手村',desc:'先會打招呼，冒險就成功一半',chapters:[
+  // read:1 ＝ 靜音讀字：作答前不唸、不出聽力題、學習卡正面不給羅馬音，逼自己用眼睛讀（給「聽得懂、看不懂」的人）
+  {...vocabCh('c0','讀字特訓・耳熟的字','讀字史萊姆','slime',[
+    vh('ねこ','','貓','ね・こ｜ね的尾巴打了個圈，像貓尾巴；別跟れ、わ搞混'),
+    vh('いぬ','','狗','い・ぬ｜ぬ尾巴有圈，め沒有'),
+    vh('ほし','','星星','ほ・し｜ほ比は多一橫；し就是一根魚鉤'),
+    vh('わかった','','知道了','わ・か・っ・た｜わ尾巴往內收，れ往外甩；小っ停一拍'),
+    vh('こわい','','好可怕','こ・わ・い｜こ是上下兩橫，い是左右兩撇'),
+    vh('やばい','','糟了／超讚','や・ば・い｜ば＝は加兩點（濁音）'),
+    vh('うそ','','騙人','う・そ｜う頭上一點，そ跟ろ別搞混'),
+    vh('なに','','什麼','な・に｜に像「イ二」：人旁邊兩橫'),
+    vh('だめ','','不行','だ・め｜だ＝た加兩點；め跟ぬ差在尾巴的圈'),
+    vh('はやく','','快點','は・や・く｜は平常唸 ha，只有當助詞才唸 wa'),
+    vh('まって','','等一下','ま・っ・て｜小っ不發音，停一拍：ma-tte'),
+    vh('せんぱい','','前輩','せ・ん・ぱ・い｜ぱ＝は加圈圈（半濁音）'),
+    vh('ほんとう','','真的','ほ・ん・と・う｜ん像草寫的 n；とう拉長唸 too'),
+    vh('きれい','','漂亮','き・れ・い｜れ跟ね、わ同一家，尾巴往外甩的是れ'),
+    vh('がんばって','','加油','が・ん・ば・っ・て｜兩個濁音＋一個小っ'),
+    vh('よろしく','','請多指教','よ・ろ・し・く｜ろ沒有圈，る有'),
+  ]),read:1},
   phraseCh('c1','勇者的第一句話','見習史萊姆','slime',[
     {jp:'ありがとう',ro:'a·ri·ga·to·u',zh:'謝謝',memo:'動漫出現率 No.1，先學先贏！'},
     {jp:'すごい',ro:'su·go·i',zh:'好厲害',memo:'看到必殺技時就大喊一聲！'},
@@ -3653,10 +3672,11 @@ function renderLearn(){
       '<div class="cface panel">'+
         '<div class="bigjp'+(ch.kind==='phrase'?' phrase':'')+'">'+it.jp+'</div>'+
         (it.sub?'<div class="subkana">'+it.sub+'</div>':'')+
-        (it.ro?'<div class="romaji mono">'+it.ro+'</div>':'')+
+        (it.ro&&!ch.read?'<div class="romaji mono">'+it.ro+'</div>':'')+
         '<button class="btn" onclick="event.stopPropagation();sayLearn();">🔊 聽發音</button>'+
       '</div>'+
       '<div class="cface cback panel">'+
+        (ch.read?'<div class="romaji mono">'+it.ro+'</div>':'')+
         '<div class="meaning">'+it.zh+'</div>'+
         '<div class="memo">'+it.memo+'</div>'+
         (it.ex?'<div class="exline">例字：'+it.ex+
@@ -3667,7 +3687,7 @@ function renderLearn(){
   $('learn-next').disabled=(L.i===ch.items.length-1);
   $('learn-fight').textContent='⚔ 前往挑戰「'+ch.monster.name+'」';
   $('learn-fight').onclick=()=>startBattle(ch.id);
-  sayItem(it);
+  if(!ch.read)sayItem(it);
 }
 function sayLearn(){sayItem(L.ch.items[L.i]);SFX.tap();}
 function sayLearnEx(){
@@ -3740,7 +3760,8 @@ function nextQ(){
   // 複習混了各章節的字，題型與干擾項池要看每個字自己的出身章節
   const kind=B.ch.review?(it._ck||'vocab'):B.ch.kind;
   const world=B.ch.review?(it._cw||curWorld):RMAP[REGION_OF[B.ch.id]].world;
-  const listen=ttsOK(WORLDS[world].tts)&&Math.random()<0.4;   // 這個大陸沒語音就全出閱讀題
+  const rd=(CHMAP[it._cid]||B.ch).read;   // 靜音讀字章的字：複習／魔王戰裡也不唸
+  const listen=!rd&&ttsOK(WORLDS[world].tts)&&Math.random()<0.4;   // 這個大陸沒語音就全出閱讀題
   const optKey=(kind==='kana')?(listen?'jp':'ro'):'zh';
   // 選項池：假名／字母章節可跨章混入同大陸的其他字；同標籤（如 じ/ぢ 同音）去重
   const pool=(kind==='kana')?KANA_POOL[world]
@@ -3753,7 +3774,7 @@ function nextQ(){
     seen[c[optKey]]=1;others.push(c);
     if(others.length===3)break;
   }
-  B.cur={it,listen,optKey,kind};
+  B.cur={it,listen,optKey,kind,rd};
   B.opts=shuffle([it].concat(others));
   const lt=WORLDS[world].letter;
   const ask=(kind==='kana')
@@ -3769,7 +3790,7 @@ function nextQ(){
        (kind==='vocab'&&it.sub&&it.sub!==it.jp?'<div class="subkana">'+it.sub+'</div>':''));
   $('b-opts').innerHTML=B.opts.map((o,k)=>
     '<button class="btn" id="opt-'+k+'" onclick="answer('+k+')">'+o[optKey]+'</button>').join('');
-  if(listen||kind!=='kana')setTimeout(()=>sayItem(it),350);
+  if(!rd&&(listen||kind!=='kana'))setTimeout(()=>sayItem(it),350);
   B.t0=Date.now();B.deadline=B.t0+B.tlimit;
   const tf=$('b-tfill');tf.style.width='100%';tf.classList.remove('hurry');
   if(B.timer)clearInterval(B.timer);
@@ -3799,7 +3820,7 @@ function answer(k){
     if(o===it)b.classList.add('right');
     else if(i===k)b.classList.add('wrong');
   });
-  if(B.cur.kind==='kana'&&!B.cur.listen)sayItem(it);
+  if((B.cur.kind==='kana'||B.cur.rd)&&!B.cur.listen)sayItem(it);   // 讀完才聽，對答案
   if(right){
     const remain=B.deadline-Date.now();
     const crit=remain>B.tlimit*.5;
